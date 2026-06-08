@@ -96,7 +96,7 @@ function normalizeResult(result) {
   const achievements = Array.isArray(result.achievements) ? result.achievements : [];
   const report = Array.isArray(result.report) ? result.report : [];
   const categoryScores = result.categoryScores || {};
-  const curriculumScores = result.curriculumScores || {};
+  const educationScores = result.educationScores || {};
   const strongestHabit = result.strongestHabit || {};
   const weakestHabit = result.weakestHabit || {};
 
@@ -134,7 +134,7 @@ function normalizeResult(result) {
       message: String(badge.message || "").trim(),
     },
     categoryScores,
-    curriculumScores,
+    educationScores,
     strongestHabit: {
       topic: String(strongestHabit.topic || "").trim(),
       score: Number(strongestHabit.score || 0),

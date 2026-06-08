@@ -19,6 +19,7 @@
 </head>
 
 <body>
+  <a class="skip-link" href="#mainContent">Skip to main content</a>
   <!-- Header stays at the top so users can jump around the page. -->
   <header class="site-header">
     <a class="brand" href="#home" aria-label="20 to 32 Smile Check home">
@@ -44,7 +45,7 @@
     </nav>
   </header>
 
-  <main>
+  <main id="mainContent" tabindex="-1">
     <!-- 1. Landing page section -->
     <section class="hero section-screen active-screen" id="home">
       <div class="hero-copy">
@@ -109,6 +110,7 @@
 
         <h3 id="questionText">Quiz question appears here</h3>
         <div class="answer-grid" id="answerGrid"></div>
+        <p class="form-status" id="quizStatus" role="alert"></p>
 
         <div class="quiz-actions">
           <button class="btn btn-soft" id="prevQuestionBtn" type="button">Back</button>
@@ -175,7 +177,7 @@
           <span class="report-note">Scores show how each habit area supports prevention.</span>
         </div>
         <div class="category-list" id="categoryList"></div>
-        <div class="category-list curriculum-score-list" id="curriculumCategoryList"></div>
+        <div class="category-list education-score-list" id="educationCategoryList"></div>
       </article>
 
       <article class="recommendation-card">
@@ -479,9 +481,9 @@
       </article>
 
       <article class="impact-section-card">
-        <span class="result-label">University of Sydney DMD curriculum alignment</span>
+        <span class="result-label">Integrated oral health education</span>
         <h3>Integrated themes demonstrated by the platform</h3>
-        <div class="curriculum-grid">
+        <div class="education-grid">
           <div><strong>Clinical Sciences and Skills</strong><p>Links plaque, gingivitis, erosion, eruption patterns, orthodontic hygiene, and injury prevention to daily habits.</p></div>
           <div><strong>Oral and Systemic Biosciences</strong><p>Explains biofilm, acid production, saliva, fluoride, inflammation, and oral-systemic health in youth-friendly language.</p></div>
           <div><strong>Evidence-Based Practice</strong><p>Recommendations include why the habit matters and the science behind the advice.</p></div>

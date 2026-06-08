@@ -144,7 +144,7 @@ function makeCategoryScores(score) {
   return categoryScores;
 }
 
-function makeCurriculumScores(categoryScores) {
+function makeEducationScores(categoryScores) {
   const average = (scores) => Math.round(scores.reduce((sum, score) => sum + score, 0) / scores.length);
 
   return {
@@ -205,7 +205,7 @@ function makeRecommendations(categoryScores) {
 function makeResult(index, previousResult) {
   const score = scoreFromBand();
   const categoryScores = makeCategoryScores(score);
-  const curriculumScores = makeCurriculumScores(categoryScores);
+  const educationScores = makeEducationScores(categoryScores);
   const { strongestHabit, weakestHabit } = getHabitExtremes(categoryScores);
   const recommendations = makeRecommendations(categoryScores);
   const baseResult = {
@@ -217,7 +217,7 @@ function makeResult(index, previousResult) {
     riskLevel: getRiskLevel(score),
     badge: getBadge(score),
     categoryScores,
-    curriculumScores,
+    educationScores,
     strongestHabit,
     weakestHabit,
     recommendations,
@@ -286,9 +286,17 @@ function makeEngagementAnalytics() {
 
   return Array.from({ length: 520 }, () => {
     const section = pick(sections);
+    const type = section === "myth_quiz"
+      ? "myth_quiz_answer"
+      : ["recommendations", "caregivers"].includes(section)
+        ? "evidence_layer"
+        : section === "prevention_plan"
+          ? pick(["prevention_checklist", "evidence_layer"])
+          : "module_engagement";
+
     return {
       id: crypto.randomUUID(),
-      type: section === "myth_quiz" ? "myth_quiz_answer" : section === "prevention_plan" ? "prevention_checklist" : "module_engagement",
+      type,
       section,
       detail: pick(details[section]),
       value: random() > 0.35,

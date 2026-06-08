@@ -318,12 +318,37 @@ const clinicalFindingCards = [
   ["Eruption patterns", "Dentists track whether teeth are coming in at the expected stage and position."],
 ];
 
-const scienceExplanations = {
-  flossing: ["Why This Matters", "Food and plaque can stay between teeth where toothbrush bristles cannot reach.", "The Science Behind This Recommendation", "Plaque biofilm near the gums can trigger inflammation and bleeding. Flossing disrupts biofilm between teeth."],
-  diet: ["Why This Matters", "Frequent sugary or acidic drinks give bacteria more chances to produce acids.", "The Science Behind This Recommendation", "Bacteria metabolize sugars and release acids that can demineralize enamel. Saliva and fluoride help repair early mineral loss."],
-  fluoride: ["Why This Matters", "Fluoride supports enamel strength during daily acid challenges.", "The Science Behind This Recommendation", "Fluoride helps remineralization, making enamel more resistant to future acid attacks."],
-  care: ["Why This Matters", "Regular dental care supports prevention and early detection.", "The Science Behind This Recommendation", "Dental professionals can identify plaque, gum inflammation, eruption concerns, early caries risk, and injury risks before they become larger problems."],
-  brushing: ["Why This Matters", "Brushing removes plaque from tooth surfaces before it irritates gums or feeds acid-producing bacteria.", "The Science Behind This Recommendation", "Biofilm forms daily. Brushing with fluoride toothpaste disrupts biofilm and delivers fluoride to enamel."],
+const evidenceLibrary = {
+  flossing: {
+    why: "Food and plaque can stay between teeth where a toothbrush cannot fully reach.",
+    rationale: "Cleaning between teeth breaks up plaque near the gums before it causes irritation.",
+    prevents: "Bleeding gums, gum inflammation, and cavities between teeth.",
+  },
+  diet: {
+    why: "Frequent sugary or acidic drinks give teeth more acid attacks during the day.",
+    rationale: "Mouth bacteria use sugar to make acid. Saliva and fluoride help repair enamel, but frequent acid makes repair harder.",
+    prevents: "Early cavities, enamel wear, and white spot marks.",
+  },
+  fluoride: {
+    why: "Fluoride helps enamel stay strong when teeth face daily acid challenges.",
+    rationale: "Fluoride supports remineralization, which is the tooth's natural repair process.",
+    prevents: "Early enamel weakening and cavity formation.",
+  },
+  care: {
+    why: "Regular dental visits help catch small concerns before they become painful or harder to manage.",
+    rationale: "Dental teams can check plaque, gum health, tooth eruption, early cavity risk, and injury prevention needs.",
+    prevents: "Untreated cavities, gum problems, and missed growth or eruption concerns.",
+  },
+  brushing: {
+    why: "Brushing removes plaque before it irritates gums or feeds cavity-causing bacteria.",
+    rationale: "Plaque biofilm forms every day. Brushing with fluoride toothpaste removes plaque and leaves fluoride on enamel.",
+    prevents: "Plaque buildup, gingivitis, bad breath, and early cavities.",
+  },
+  sports: {
+    why: "A mouthguard can protect teeth during contact sports or high-impact activities.",
+    rationale: "Mouthguards spread out force and reduce direct hits to teeth, lips, and jaws.",
+    prevents: "Chipped teeth, knocked-out teeth, and mouth injuries.",
+  },
 };
 
 const accessQuestionsData = [
@@ -365,6 +390,7 @@ const progressPercent = document.querySelector("#progressPercent");
 const quizProgress = document.querySelector("#quizProgress");
 const questionText = document.querySelector("#questionText");
 const answerGrid = document.querySelector("#answerGrid");
+const quizStatus = document.querySelector("#quizStatus");
 const prevQuestionBtn = document.querySelector("#prevQuestionBtn");
 const nextQuestionBtn = document.querySelector("#nextQuestionBtn");
 const scoreNumber = document.querySelector("#scoreNumber");
@@ -381,7 +407,7 @@ const strongestHabitText = document.querySelector("#strongestHabitText");
 const weakestHabit = document.querySelector("#weakestHabit");
 const weakestHabitText = document.querySelector("#weakestHabitText");
 const categoryList = document.querySelector("#categoryList");
-const curriculumCategoryList = document.querySelector("#curriculumCategoryList");
+const educationCategoryList = document.querySelector("#educationCategoryList");
 const recommendationList = document.querySelector("#recommendationList");
 const clinicalGrid = document.querySelector("#clinicalGrid");
 const dailyChecklist = document.querySelector("#dailyChecklist");
@@ -441,6 +467,15 @@ function showScreen(screenId) {
     screen.classList.toggle("active-screen", screen.id === screenId);
   });
 
+  document.querySelectorAll("[data-screen-link]").forEach((link) => {
+    const isCurrent = link.dataset.screenLink === screenId;
+    if (isCurrent) {
+      link.setAttribute("aria-current", "page");
+    } else {
+      link.removeAttribute("aria-current");
+    }
+  });
+
   document.querySelector(`#${screenId}`).scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
@@ -453,6 +488,7 @@ function renderQuestion() {
   const question = quizQuestions[currentQuestionIndex];
   const progress = Math.round(((currentQuestionIndex + 1) / quizQuestions.length) * 100);
 
+  quizStatus.textContent = "";
   questionCounter.textContent = `Question ${currentQuestionIndex + 1} of ${quizQuestions.length}`;
   progressPercent.textContent = `${progress}%`;
   quizProgress.style.width = `${progress}%`;
@@ -463,6 +499,7 @@ function renderQuestion() {
     const button = document.createElement("button");
     button.className = "answer-option";
     button.type = "button";
+    button.setAttribute("aria-pressed", selectedAnswers[currentQuestionIndex] === answerIndex ? "true" : "false");
 
     if (selectedAnswers[currentQuestionIndex] === answerIndex) {
       button.classList.add("selected");
@@ -568,7 +605,7 @@ function averageQuestionScore(matchQuestion) {
   return possible ? Math.round((earned / possible) * 100) : 0;
 }
 
-function getCurriculumScores() {
+function getEducationScores() {
   return {
     oralHygiene: {
       label: "Oral Hygiene Score",
@@ -657,7 +694,7 @@ function buildResult() {
   const risk = getRiskLevel(score);
   const badge = getBadge(score);
   const categoryScores = getCategoryScores();
-  const curriculumScores = getCurriculumScores();
+  const educationScores = getEducationScores();
   const habits = getHabitExtremes();
   const baseResult = {
     score,
@@ -665,7 +702,7 @@ function buildResult() {
     riskClassName: risk.className,
     badge,
     categoryScores,
-    curriculumScores,
+    educationScores,
     strongestHabit: habits.strongest,
     weakestHabit: habits.weakest,
     recommendations: getRecommendations(),
@@ -701,12 +738,12 @@ function renderCategoryReport(categoryScores) {
   });
 }
 
-function renderCurriculumCategoryReport(curriculumScores) {
-  curriculumCategoryList.innerHTML = "";
+function renderEducationCategoryReport(educationScores) {
+  educationCategoryList.innerHTML = "";
 
-  Object.values(curriculumScores).forEach((category) => {
+  Object.values(educationScores).forEach((category) => {
     const card = document.createElement("div");
-    card.className = "category-card curriculum-score-card";
+    card.className = "category-card education-score-card";
     card.innerHTML = `
       <div class="category-topline">
         <div>
@@ -720,7 +757,7 @@ function renderCurriculumCategoryReport(curriculumScores) {
       <p>${category.explanation}</p>
     `;
 
-    curriculumCategoryList.appendChild(card);
+    educationCategoryList.appendChild(card);
   });
 }
 
@@ -750,38 +787,78 @@ function renderClinicalCards() {
   });
 }
 
+function evidenceForText(text) {
+  const lower = text.toLowerCase();
+  if (lower.includes("floss") || lower.includes("between teeth") || lower.includes("clean between")) return evidenceLibrary.flossing;
+  if (lower.includes("sugar") || lower.includes("snack") || lower.includes("water") || lower.includes("drink")) return evidenceLibrary.diet;
+  if (lower.includes("fluoride")) return evidenceLibrary.fluoride;
+  if (lower.includes("checkup") || lower.includes("gum") || lower.includes("bleeding") || lower.includes("dentist") || lower.includes("dental professional")) return evidenceLibrary.care;
+  if (lower.includes("mouthguard") || lower.includes("sport")) return evidenceLibrary.sports;
+  return evidenceLibrary.brushing;
+}
+
+function renderEvidenceComponent(evidence, detail, section = "recommendations") {
+  return `
+    <button class="science-toggle" type="button" data-evidence-detail="${detail}" data-evidence-section="${section}">
+      View evidence
+    </button>
+    <div class="science-popup">
+      <div>
+        <span>Why this matters</span>
+        <p>${evidence.why}</p>
+      </div>
+      <div>
+        <span>Supporting scientific rationale</span>
+        <p>${evidence.rationale}</p>
+      </div>
+      <div>
+        <span>Oral health outcome being prevented</span>
+        <p>${evidence.prevents}</p>
+      </div>
+    </div>
+  `;
+}
+
+function connectEvidenceToggle(container) {
+  container.querySelectorAll(".science-toggle").forEach((button) => {
+    button.addEventListener("click", () => {
+      const item = button.closest(".evidence-recommendation, .prevention-evidence-item");
+      item.classList.toggle("open");
+      button.textContent = item.classList.contains("open") ? "Hide evidence" : "View evidence";
+      trackEngagement({
+        type: "evidence_layer",
+        section: button.dataset.evidenceSection || "recommendations",
+        detail: button.dataset.evidenceDetail || "Evidence opened",
+      });
+    });
+  });
+}
+
 function scienceForRecommendation(recommendation) {
   const lower = recommendation.toLowerCase();
-  if (lower.includes("floss")) return scienceExplanations.flossing;
-  if (lower.includes("sugar") || lower.includes("snack") || lower.includes("water")) return scienceExplanations.diet;
-  if (lower.includes("fluoride")) return scienceExplanations.fluoride;
-  if (lower.includes("checkup") || lower.includes("gum") || lower.includes("bleeding")) return scienceExplanations.care;
-  return scienceExplanations.brushing;
+  if (lower.includes("floss")) return evidenceLibrary.flossing;
+  if (lower.includes("sugar") || lower.includes("snack") || lower.includes("water")) return evidenceLibrary.diet;
+  if (lower.includes("fluoride")) return evidenceLibrary.fluoride;
+  if (lower.includes("checkup") || lower.includes("gum") || lower.includes("bleeding")) return evidenceLibrary.care;
+  if (lower.includes("mouthguard") || lower.includes("sport")) return evidenceLibrary.sports;
+  return evidenceLibrary.brushing;
 }
 
 function renderEvidenceRecommendations(recommendations) {
   recommendationList.innerHTML = "";
 
   recommendations.forEach((recommendation) => {
-    const [whyTitle, why, scienceTitle, science] = scienceForRecommendation(recommendation);
+    const evidence = scienceForRecommendation(recommendation);
     const item = document.createElement("li");
     item.className = "evidence-recommendation";
     item.innerHTML = `
       <strong>${recommendation}</strong>
-      <button class="science-toggle" type="button">Science Behind This</button>
-      <div class="science-popup">
-        <span>${whyTitle}</span>
-        <p>${why}</p>
-        <span>${scienceTitle}</span>
-        <p>${science}</p>
-      </div>
+      ${renderEvidenceComponent(evidence, recommendation, "recommendations")}
     `;
-    item.querySelector(".science-toggle").addEventListener("click", () => {
-      item.classList.toggle("open");
-      trackEngagement({ type: "science_popup", section: "recommendations", detail: recommendation });
-    });
     recommendationList.appendChild(item);
   });
+
+  connectEvidenceToggle(recommendationList);
 }
 
 function renderPreventionPlan(result) {
@@ -813,9 +890,14 @@ function renderPreventionPlan(result) {
   weeklyGoals.innerHTML = "";
   goals.forEach((goal) => {
     const item = document.createElement("li");
-    item.textContent = goal;
+    item.className = "prevention-evidence-item";
+    item.innerHTML = `
+      <strong>${goal}</strong>
+      ${renderEvidenceComponent(evidenceForText(goal), goal, "prevention_plan")}
+    `;
     weeklyGoals.appendChild(item);
   });
+  connectEvidenceToggle(weeklyGoals);
 }
 
 function renderAchievements(achievements) {
@@ -898,7 +980,7 @@ function renderResults() {
   weakestHabitText.textContent = finalResult.weakestHabit.feedback;
   renderTrend(null);
   renderCategoryReport(finalResult.categoryScores);
-  renderCurriculumCategoryReport(finalResult.curriculumScores);
+  renderEducationCategoryReport(finalResult.educationScores);
   renderClinicalCards();
   renderPreventionPlan(finalResult);
   renderAchievements(finalResult.achievements);
@@ -910,6 +992,7 @@ function renderResults() {
 async function loadHistory() {
   historyStatus.textContent = "Loading saved results...";
   historyList.innerHTML = "";
+  refreshHistoryBtn.disabled = true;
 
   try {
     const response = await fetch(RESULTS_API);
@@ -927,6 +1010,8 @@ async function loadHistory() {
         The dashboard needs the backend running to show saved results.
       </div>
     `;
+  } finally {
+    refreshHistoryBtn.disabled = false;
   }
 }
 
@@ -1158,9 +1243,15 @@ function renderAgeGuidance(age) {
     ["Clinical relevance", guidance.clinical],
   ].forEach(([title, text]) => {
     const card = document.createElement("div");
-    card.innerHTML = `<strong>${title}</strong><p>${text}</p>`;
+    card.className = title === "Prevention recommendations" ? "prevention-evidence-item" : "";
+    card.innerHTML = `
+      <strong>${title}</strong>
+      <p>${text}</p>
+      ${title === "Prevention recommendations" ? renderEvidenceComponent(evidenceForText(text), text, "tooth_explorer") : ""}
+    `;
     ageGuidanceGrid.appendChild(card);
   });
+  connectEvidenceToggle(ageGuidanceGrid);
 }
 
 function saveAgeLookup() {
@@ -1186,10 +1277,15 @@ function renderAccessAssessment() {
     `;
 
     card.querySelectorAll("button").forEach((button) => {
+      button.setAttribute("aria-pressed", "false");
       button.addEventListener("click", () => {
         answers[key] = button.dataset.value;
-        card.querySelectorAll("button").forEach((btn) => btn.classList.remove("selected"));
+        card.querySelectorAll("button").forEach((btn) => {
+          btn.classList.remove("selected");
+          btn.setAttribute("aria-pressed", "false");
+        });
         button.classList.add("selected");
+        button.setAttribute("aria-pressed", "true");
         renderAccessResult(answers);
         trackEngagement({ type: "access_assessment", section: "access", detail: key, value: button.dataset.value });
       });
@@ -1249,9 +1345,14 @@ function renderCaregiverResources() {
   caregiverResourcesData.forEach(([title, text]) => {
     const card = document.createElement("article");
     card.className = "resource-card";
-    card.innerHTML = `<strong>${title}</strong><p>${text}</p>`;
+    card.innerHTML = `
+      <strong>${title}</strong>
+      <p>${text}</p>
+      ${renderEvidenceComponent(evidenceForText(`${title}: ${text}`), title, "caregiver_resources")}
+    `;
     caregiverResources.appendChild(card);
   });
+  connectEvidenceToggle(caregiverResources);
 }
 
 function percent(part, total) {
@@ -1383,7 +1484,7 @@ function getEngagementSummary(engagement = []) {
     totalEvents: events.length,
     moduleOpens: events.filter((event) => event.type === "module_open").length,
     preventionActions: events.filter((event) => event.type === "prevention_checklist").length,
-    sciencePopups: events.filter((event) => event.type === "science_popup").length,
+    sciencePopups: events.filter((event) => event.type === "science_popup" || event.type === "evidence_layer").length,
     mythCorrectRate: mythAnswers.length ? `${percent(correctMythAnswers, mythAnswers.length)}%` : "Not enough data",
     commonSection: mostCommonFromCounts(countBy(events, (event) => event.section || "General")),
   };
@@ -1458,6 +1559,7 @@ async function loadAnalytics() {
   scoreDistributionChart.innerHTML = "";
   riskDistributionChart.innerHTML = "";
   issueChart.innerHTML = "";
+  refreshAnalyticsBtn.disabled = true;
 
   try {
     const [resultData, engagementData] = await Promise.all([
@@ -1473,6 +1575,8 @@ async function loadAnalytics() {
     issueChart.innerHTML = `<div class="empty-history">Issue data is unavailable right now.</div>`;
     impactHeadline.textContent = "Analytics unavailable";
     impactSummary.textContent = "The admin dashboard uses saved backend results, so the backend must be running.";
+  } finally {
+    refreshAnalyticsBtn.disabled = false;
   }
 }
 
@@ -1508,7 +1612,7 @@ function renderImpactMetricCards(results, engagement = []) {
     { label: "Moderate/High Risk", value: `${percent((riskCounts["Moderate Risk"] || 0) + (riskCounts["High Risk"] || 0), total)}%`, note: "Potential target group for outreach" },
     { label: "Education interactions", value: engagementSummary.totalEvents, note: "Anonymous learning engagement events" },
     { label: "Most used education area", value: engagementSummary.commonSection.label, note: `${engagementSummary.commonSection.count} interaction${engagementSummary.commonSection.count === 1 ? "" : "s"}` },
-    { label: "Science popups opened", value: engagementSummary.sciencePopups, note: "Evidence-based explanation views" },
+    { label: "Evidence views opened", value: engagementSummary.sciencePopups, note: "Evidence-based explanation views" },
     { label: "Seeded demo data", value: demoCount, note: "Clearly marked sample records for presentation" },
   ];
 
@@ -1528,6 +1632,7 @@ function renderImpactMetricCards(results, engagement = []) {
 async function loadImpactMetrics() {
   impactMetricsStatus.textContent = "Loading live impact metrics...";
   impactMetricsGrid.innerHTML = "";
+  refreshImpactBtn.disabled = true;
 
   try {
     const [resultData, engagementData] = await Promise.all([
@@ -1541,6 +1646,8 @@ async function loadImpactMetrics() {
     impactMetricsGrid.innerHTML = `
       <div class="empty-history">Start the backend to show live project impact metrics.</div>
     `;
+  } finally {
+    refreshImpactBtn.disabled = false;
   }
 }
 
@@ -1612,7 +1719,7 @@ nextQuestionBtn.addEventListener("click", () => {
   const hasAnswer = selectedAnswers[currentQuestionIndex] !== null;
 
   if (!hasAnswer) {
-    alert("Please choose an answer before moving on.");
+    quizStatus.textContent = "Please choose an answer before moving on.";
     return;
   }
 

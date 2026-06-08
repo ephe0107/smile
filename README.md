@@ -4,13 +4,13 @@ A polished full-stack oral health education platform for youth.
 
 Users answer a 10-question Smile Check, receive a Smile Score out of 100, unlock badges and achievements, review a personalized oral health report, see a visual risk dashboard, get dynamic recommendations, compare progress over time, try a dental myth quiz, and finish with a certificate screen.
 
-The platform now connects its learning features to University of Sydney DMD-style curriculum themes, including clinical sciences, oral biosciences, evidence-based prevention, health promotion, social access factors, professional communication, and interprofessional collaboration.
+The platform connects its learning features to integrated oral health education themes, including clinical sciences, oral biosciences, evidence-based prevention, health promotion, social access factors, professional communication, and interprofessional collaboration.
 
 The project also includes an admin analytics dashboard that uses saved backend results and anonymous education engagement events to measure educational impact and identify oral health education gaps in youth populations.
 
 It also includes a Tooth Development Explorer for ages 5 to 18, with an interactive dental chart, expected eruption guidance, primary tooth loss notes, age-specific clinical relevance, prevention guidance, biology explanations, and engagement analytics.
 
-A dedicated Project Impact page presents the problem, mission, curriculum alignment, platform features, live backend metrics, communication goals, and future expansion plan in a format suitable for a dental school admissions committee.
+A dedicated Project Impact page presents the problem, mission, integrated education themes, platform features, live backend metrics, communication goals, and future expansion plan in a format suitable for a dental school admissions committee.
 
 ## How to Run It Locally
 
@@ -51,7 +51,7 @@ node scripts/seed-demo-data.js
 This creates:
 
 - 250 realistic seeded demo quiz results
-- Realistic habits, scores, risk levels, recommendations, achievements, reports, and curriculum-style category scores
+- Realistic habits, scores, risk levels, recommendations, achievements, reports, and integrated category scores
 - Demo tooth explorer engagement analytics
 - Demo education engagement analytics for learning modules, prevention actions, and quiz interactions
 
@@ -104,7 +104,7 @@ Saved fields:
 - `riskLevel`
 - `badge`
 - `categoryScores`
-- `curriculumScores`
+- `educationScores`
 - `report`
 - `recommendations`
 - `achievements`
@@ -133,7 +133,7 @@ The admin dashboard displays:
 
 These insights demonstrate how the platform could be used as a public-health education tool to find prevention gaps across youth participants.
 
-## Curriculum-Aligned Learning Features
+## Integrated Learning Features
 
 The platform keeps the original youth-focused experience while adding:
 
