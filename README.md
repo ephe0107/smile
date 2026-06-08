@@ -1,8 +1,8 @@
 # 20 to 32 Smile Check
 
-A polished full-stack educational oral health website for youth.
+A polished full-stack oral health education platform for youth.
 
-Users answer a 10-question Smile Check, receive a Smile Score out of 100, unlock a badge, get a risk level, see personalized recommendations, save their result, review previous results in a dashboard, try a dental myth quiz, and finish with a certificate screen.
+Users answer a 10-question Smile Check, receive a Smile Score out of 100, unlock badges and achievements, review a personalized oral health report, see a visual risk dashboard, get dynamic recommendations, compare progress over time, try a dental myth quiz, and finish with a certificate screen.
 
 ## How to Run It Locally
 
@@ -30,7 +30,7 @@ if `npm` is available on your computer.
 
 - `index.html` - the page structure and all website sections.
 - `style.css` - the design, colors, layout, responsiveness, and animations.
-- `script.js` - the quiz, scoring, badges, recommendations, dashboard, myth quiz, and frontend error handling.
+- `script.js` - the quiz, category scoring, visual dashboard, recommendations, achievements, progress tracking, myth quiz, and frontend error handling.
 - `server.js` - the backend server and API endpoints.
 - `package.json` - project metadata and start scripts.
 - `README.md` - this guide.
@@ -55,7 +55,13 @@ Saved fields:
 - `score`
 - `riskLevel`
 - `badge`
+- `categoryScores`
+- `report`
 - `recommendations`
+- `achievements`
+- `strongestHabit`
+- `weakestHabit`
+- `trend`
 - `completedAt`
 
 ## Deployment Note

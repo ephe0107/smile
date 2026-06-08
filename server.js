@@ -71,6 +71,11 @@ function normalizeResult(result) {
   const riskLevel = String(result.riskLevel || "").trim();
   const badge = result.badge || {};
   const recommendations = Array.isArray(result.recommendations) ? result.recommendations : [];
+  const achievements = Array.isArray(result.achievements) ? result.achievements : [];
+  const report = Array.isArray(result.report) ? result.report : [];
+  const categoryScores = result.categoryScores || {};
+  const strongestHabit = result.strongestHabit || {};
+  const weakestHabit = result.weakestHabit || {};
 
   if (!Number.isInteger(score) || score < 0 || score > 100) {
     throw new Error("Score must be a whole number from 0 to 100.");
@@ -88,6 +93,14 @@ function normalizeResult(result) {
     throw new Error("At least one recommendation is required.");
   }
 
+  if (!achievements.length) {
+    throw new Error("At least one achievement record is required.");
+  }
+
+  if (!report.length) {
+    throw new Error("The personalized report is required.");
+  }
+
   return {
     id: crypto.randomUUID(),
     score,
@@ -97,16 +110,53 @@ function normalizeResult(result) {
       icon: String(badge.icon).trim(),
       message: String(badge.message || "").trim(),
     },
+    categoryScores,
+    strongestHabit: {
+      topic: String(strongestHabit.topic || "").trim(),
+      score: Number(strongestHabit.score || 0),
+      feedback: String(strongestHabit.feedback || "").trim(),
+    },
+    weakestHabit: {
+      topic: String(weakestHabit.topic || "").trim(),
+      score: Number(weakestHabit.score || 0),
+      feedback: String(weakestHabit.feedback || "").trim(),
+    },
     recommendations: recommendations.map((item) => String(item).trim()).filter(Boolean),
+    report: report.map((item) => ({
+      category: String(item.category || "").trim(),
+      score: Number(item.score || 0),
+      explanation: String(item.explanation || "").trim(),
+    })),
+    achievements: achievements.map((item) => ({
+      name: String(item.name || "").trim(),
+      icon: String(item.icon || "").trim(),
+      description: String(item.description || "").trim(),
+      unlocked: Boolean(item.unlocked),
+    })),
     completedAt: new Date().toISOString(),
+  };
+}
+
+function addProgressTrend(result, previousResult) {
+  const previousScore = previousResult ? Number(previousResult.score) : null;
+  const change = previousScore === null ? 0 : result.score - previousScore;
+
+  return {
+    ...result,
+    trend: {
+      previousScore,
+      change,
+      direction: change > 0 ? "up" : change < 0 ? "down" : "flat",
+    },
   };
 }
 
 async function saveResult(request, response) {
   try {
     const body = await readRequestBody(request);
-    const result = normalizeResult(JSON.parse(body));
+    const normalizedResult = normalizeResult(JSON.parse(body));
     const results = readResults();
+    const result = addProgressTrend(normalizedResult, results[0]);
 
     results.unshift(result);
     writeResults(results.slice(0, 50));

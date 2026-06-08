@@ -123,9 +123,54 @@
         </article>
       </div>
 
+      <article class="visual-dashboard">
+        <div class="dashboard-summary">
+          <div>
+            <span class="result-label">Visual Risk Dashboard</span>
+            <h3 id="riskDashboardTitle">Your habits snapshot</h3>
+            <p id="trendSummary">Complete the quiz to compare your result with past scores.</p>
+          </div>
+          <div class="donut-chart" id="scoreChart" style="--score: 0">
+            <span id="scoreChartLabel">0%</span>
+          </div>
+        </div>
+
+        <div class="habit-grid">
+          <div class="habit-card strong">
+            <span>Strongest habit</span>
+            <strong id="strongestHabit">-</strong>
+            <p id="strongestHabitText">Your top habit will appear here.</p>
+          </div>
+          <div class="habit-card weak">
+            <span>Weakest habit</span>
+            <strong id="weakestHabit">-</strong>
+            <p id="weakestHabitText">Your growth area will appear here.</p>
+          </div>
+        </div>
+      </article>
+
+      <article class="report-card">
+        <div class="report-heading">
+          <div>
+            <span class="result-label">Personalized Oral Health Report</span>
+            <h3>Category breakdown</h3>
+          </div>
+          <span class="report-note">Scores show how each habit area supports prevention.</span>
+        </div>
+        <div class="category-list" id="categoryList"></div>
+      </article>
+
       <article class="recommendation-card">
-        <h3>Personalized recommendations</h3>
+        <h3>Recommendation Engine</h3>
         <ul id="recommendationList"></ul>
+      </article>
+
+      <article class="achievement-card">
+        <div>
+          <span class="result-label">Achievement System</span>
+          <h3>Unlocked achievements</h3>
+        </div>
+        <div class="achievement-list" id="achievementList"></div>
       </article>
 
       <p class="save-status" id="saveStatus" role="status"></p>
