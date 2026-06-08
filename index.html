@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- EDIT: this is the title shown in the browser tab -->
+  <title>Smile</title>
+
+  <!-- EDIT: this one-line description helps Google and link previews -->
+  <meta name="description" content="Smile is a little project in the making." />
+
+  <!-- Friendly Google Font (loads automatically, nothing to install) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <!-- Our styles live in this separate file -->
+  <link rel="stylesheet" href="styles.css" />
+</head>
+
+<body>
+
+  <!-- ===== Top bar ===== -->
+  <header class="topbar">
+    <a class="logo" href="#">smile</a>
+    <nav class="nav">
+      <a href="#about">About</a>
+      <a href="#what">What we do</a>
+      <a href="#contact">Say hello</a>
+    </nav>
+  </header>
+
+  <!-- ===== Hero (the big first thing people see) ===== -->
+  <section class="hero">
+    <!-- EDIT: your main headline -->
+    <h1>Something good is on the way.</h1>
+
+    <!-- EDIT: a sentence or two under the headline -->
+    <p class="hero-sub">
+      Smile is a small project we are building with a lot of care.
+      We hope it makes your day a little brighter.
+    </p>
+
+    <!-- EDIT: the buttons. The href "#contact" jumps to the contact section below -->
+    <div class="hero-buttons">
+      <a class="btn btn-primary" href="#contact">Get in touch</a>
+      <a class="btn btn-ghost" href="#about">Learn more</a>
+    </div>
+  </section>
+
+  <!-- ===== About ===== -->
+  <section id="about" class="section">
+    <h2>About</h2>
+    <!-- EDIT: tell people who you are and why this exists -->
+    <p class="section-text">
+      We are two people building something we believe in. This page is the
+      first home for the idea, and it will grow as the project does.
+    </p>
+  </section>
+
+  <!-- ===== Three info cards ===== -->
+  <section id="what" class="section">
+    <h2>What we do</h2>
+    <div class="cards">
+
+      <!-- EDIT each card's emoji, title, and text -->
+      <div class="card">
+        <div class="card-emoji">🌱</div>
+        <h3>Built with care</h3>
+        <p>Every detail is considered, nothing is rushed.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-emoji">✨</div>
+        <h3>Simple and clear</h3>
+        <p>No clutter. Just the things that matter to you.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-emoji">💛</div>
+        <h3>Made for people</h3>
+        <p>We design for real humans having a real day.</p>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ===== Contact call to action ===== -->
+  <section id="contact" class="cta">
+    <h2>Want to follow along?</h2>
+    <p>We would love to hear from you.</p>
+    <!-- EDIT: change this to your real email address -->
+    <a class="btn btn-primary" href="mailto:hello@example.com">Say hello</a>
+  </section>
+
+  <!-- ===== Footer ===== -->
+  <footer class="footer">
+    <!-- EDIT: your project name and year -->
+    <p>© 2026 Smile. Made with care.</p>
+  </footer>
+
+</body>
+</html>

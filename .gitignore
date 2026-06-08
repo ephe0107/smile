@@ -1,0 +1,9 @@
+# macOS junk files
+.DS_Store
+
+# Editor settings
+.vscode/
+.idea/
+
+# Logs
+*.log
