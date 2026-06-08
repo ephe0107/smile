@@ -1,10 +1,20 @@
 # smile 2032
 
-A small personal website. Built with plain HTML and CSS, so there is nothing to install to view or edit it.
+A small personal website with a simple local backend.
 
 ## How to view it
 
-Just double-click `index.html` and it opens in your browser. That's it.
+Run this once from the project folder:
+
+```bash
+node server.js
+```
+
+Then open:
+
+```text
+http://localhost:3000
+```
 
 (When we set up the live version, you'll also get a public link anyone can visit.)
 
@@ -12,9 +22,20 @@ Just double-click `index.html` and it opens in your browser. That's it.
 
 - `index.html` - the content and structure of the page (the words, sections, buttons).
 - `styles.css` - how it looks (colors, fonts, spacing, layout).
+- `server.js` - the local backend. It serves the website and saves contact form messages.
 - `README.md` - this file.
 
 Look for `EDIT:` comments inside `index.html`. They point to the spots you'll most likely want to change.
+
+## Contact form messages
+
+When someone submits the contact form locally, messages are saved in:
+
+```text
+data/messages.jsonl
+```
+
+That file is ignored by Git so private messages do not get uploaded to GitHub.
 
 ## Working together (the everyday rhythm)
 

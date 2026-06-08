@@ -95,8 +95,26 @@
   <section id="contact" class="cta">
     <h2>Have a question about your smile?</h2>
     <p>We would love to hear from you.</p>
-    <!-- EDIT: change this to your real email address -->
-    <a class="btn btn-primary" href="mailto:hello@example.com">Say hello</a>
+
+    <form class="contact-form" id="contact-form">
+      <label>
+        Name
+        <input name="name" type="text" autocomplete="name" required />
+      </label>
+
+      <label>
+        Email
+        <input name="email" type="email" autocomplete="email" required />
+      </label>
+
+      <label>
+        Message
+        <textarea name="message" rows="4" required></textarea>
+      </label>
+
+      <button class="btn btn-primary" type="submit">Send message</button>
+      <p class="form-status" id="form-status" role="status"></p>
+    </form>
   </section>
 
   <!-- ===== Footer ===== -->
@@ -104,6 +122,37 @@
     <!-- EDIT: your project name and year -->
     <p>© 2026 smile 2032. A dental student project.</p>
   </footer>
+
+  <script>
+    const form = document.querySelector("#contact-form");
+    const status = document.querySelector("#form-status");
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      status.textContent = "Sending...";
+
+      const formData = new FormData(form);
+      const message = Object.fromEntries(formData.entries());
+
+      try {
+        const response = await fetch("/api/contact", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(message),
+        });
+
+        if (!response.ok) {
+          const data = await response.json();
+          throw new Error(data.error || "Message could not be sent.");
+        }
+
+        form.reset();
+        status.textContent = "Thanks! Your message was saved.";
+      } catch (error) {
+        status.textContent = error.message;
+      }
+    });
+  </script>
 
 </body>
 </html>

@@ -1,0 +1,10 @@
+{
+  "name": "smile-2032",
+  "version": "1.0.0",
+  "private": true,
+  "description": "A small personal website with a simple local backend.",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  }
+}
