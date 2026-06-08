@@ -141,6 +141,17 @@ body {
   margin: 0 auto;
 }
 
+/* ----- Round profile picture (About Me) ----- */
+.profile-pic {
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;       /* makes it a circle */
+  object-fit: cover;        /* a real photo fills the circle without squishing */
+  display: block;
+  margin: 0 auto 24px;      /* centered, with space below */
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.08);
+}
+
 /* ----- Three cards ----- */
 .cards {
   display: grid;
