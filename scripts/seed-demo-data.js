@@ -12,6 +12,7 @@ const ROOT = path.join(__dirname, "..");
 const DATA_DIR = path.join(ROOT, "data");
 const RESULTS_FILE = path.join(DATA_DIR, "results.json");
 const EXPLORER_ANALYTICS_FILE = path.join(DATA_DIR, "tooth-explorer-analytics.json");
+const ENGAGEMENT_ANALYTICS_FILE = path.join(DATA_DIR, "engagement-analytics.json");
 
 const DEMO_COUNT = 250;
 const DEMO_SOURCE = "seeded-demo-data";
@@ -143,6 +144,38 @@ function makeCategoryScores(score) {
   return categoryScores;
 }
 
+function makeCurriculumScores(categoryScores) {
+  const average = (scores) => Math.round(scores.reduce((sum, score) => sum + score, 0) / scores.length);
+
+  return {
+    oralHygiene: {
+      label: "Oral Hygiene Score",
+      score: average([categoryScores.brushing.score, categoryScores.flossing.score, categoryScores.care.score]),
+      explanation: "Combines brushing, flossing, bedtime brushing, brushing time, and gum-health habits.",
+    },
+    diet: {
+      label: "Diet Score",
+      score: categoryScores.diet.score,
+      explanation: "Looks at sugary drinks, sticky snacks, and water after meals or snacks.",
+    },
+    prevention: {
+      label: "Prevention Score",
+      score: average([categoryScores.fluoride.score, categoryScores.care.score, categoryScores.brushing.score]),
+      explanation: "Shows how daily protection habits and preventive care support long-term oral health.",
+    },
+    accessToCare: {
+      label: "Access to Care Score",
+      score: categoryScores.care.score,
+      explanation: "Uses dental visit timing as a simple signal for connection to preventive care.",
+    },
+    knowledge: {
+      label: "Oral Health Knowledge Score",
+      score: average([categoryScores.fluoride.score, categoryScores.brushing.score]),
+      explanation: "Reflects understanding of two key prevention ideas: brushing time and fluoride support.",
+    },
+  };
+}
+
 function getHabitExtremes(categoryScores) {
   const sorted = Object.values(categoryScores).sort((a, b) => a.score - b.score);
   const weakest = sorted[0];
@@ -172,6 +205,7 @@ function makeRecommendations(categoryScores) {
 function makeResult(index, previousResult) {
   const score = scoreFromBand();
   const categoryScores = makeCategoryScores(score);
+  const curriculumScores = makeCurriculumScores(categoryScores);
   const { strongestHabit, weakestHabit } = getHabitExtremes(categoryScores);
   const recommendations = makeRecommendations(categoryScores);
   const baseResult = {
@@ -183,6 +217,7 @@ function makeResult(index, previousResult) {
     riskLevel: getRiskLevel(score),
     badge: getBadge(score),
     categoryScores,
+    curriculumScores,
     strongestHabit,
     weakestHabit,
     recommendations,
@@ -238,6 +273,32 @@ function makeExplorerAnalytics() {
   return events.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 }
 
+function makeEngagementAnalytics() {
+  const sections = ["recommendations", "prevention_plan", "myth_quiz", "access", "team", "caregivers"];
+  const details = {
+    recommendations: ["flossing", "sugary drinks", "fluoride toothpaste", "dental checkups"],
+    prevention_plan: ["Brush twice with fluoride toothpaste", "Clean between teeth", "Choose water after snacks"],
+    myth_quiz: ["Flossing cleans areas brushing cannot reach.", "Brushing harder is better.", "Juice is always healthy for teeth."],
+    access: ["cost", "transport", "nervous", "regularDentist"],
+    team: ["Pediatric Dentist", "Dental Hygienist", "Orthodontist", "Dietitian"],
+    caregivers: ["Fluoride education", "Sports mouthguards", "Brushing supervision"],
+  };
+
+  return Array.from({ length: 520 }, () => {
+    const section = pick(sections);
+    return {
+      id: crypto.randomUUID(),
+      type: section === "myth_quiz" ? "myth_quiz_answer" : section === "prevention_plan" ? "prevention_checklist" : "module_engagement",
+      section,
+      detail: pick(details[section]),
+      value: random() > 0.35,
+      isDemo: true,
+      source: DEMO_SOURCE,
+      createdAt: new Date(Date.now() - randomInt(0, 60) * 24 * 60 * 60 * 1000 - randomInt(0, 86400) * 1000).toISOString(),
+    };
+  }).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+}
+
 function main() {
   fs.mkdirSync(DATA_DIR, { recursive: true });
 
@@ -249,9 +310,11 @@ function main() {
   results.sort((a, b) => new Date(b.completedAt) - new Date(a.completedAt));
   fs.writeFileSync(RESULTS_FILE, JSON.stringify(results, null, 2));
   fs.writeFileSync(EXPLORER_ANALYTICS_FILE, JSON.stringify(makeExplorerAnalytics(), null, 2));
+  fs.writeFileSync(ENGAGEMENT_ANALYTICS_FILE, JSON.stringify(makeEngagementAnalytics(), null, 2));
 
   console.log(`Seeded ${results.length} demo quiz results.`);
   console.log(`Seeded 420 demo tooth explorer analytics events.`);
+  console.log("Seeded 520 demo education engagement analytics events.");
   console.log("Demo data is marked with isDemo: true and source: seeded-demo-data.");
 }
 

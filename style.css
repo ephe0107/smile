@@ -356,6 +356,13 @@ a {
 .metric-card,
 .impact-card,
 .impact-section-card,
+.module-panel,
+.clinical-card,
+.prevention-card,
+.age-guidance-card,
+.access-result-card,
+.team-detail,
+.resource-card,
 .explorer-panel,
 .age-control-card,
 .development-card,
@@ -632,6 +639,11 @@ a {
   margin-top: 18px;
 }
 
+.curriculum-score-list {
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+
 .category-card {
   padding: 18px;
   border: 1px solid var(--line);
@@ -690,6 +702,125 @@ a {
   background: #ffffff;
   color: var(--muted);
   font-weight: 600;
+}
+
+.clinical-card,
+.prevention-card {
+  margin-top: 18px;
+  padding: 26px;
+}
+
+.clinical-grid,
+.prevention-grid,
+.age-guidance-grid,
+.team-grid,
+.resource-grid {
+  display: grid;
+  gap: 14px;
+  margin-top: 18px;
+}
+
+.clinical-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.clinical-finding-card,
+.age-guidance-grid div,
+.access-question-card,
+.team-card,
+.resource-card {
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: #ffffff;
+}
+
+.clinical-finding-card strong,
+.age-guidance-grid strong,
+.access-question-card strong,
+.team-card strong,
+.resource-card strong {
+  display: block;
+  margin-bottom: 6px;
+}
+
+.clinical-finding-card p,
+.age-guidance-grid p,
+.access-question-card p,
+.team-card p,
+.resource-card p {
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.evidence-recommendation {
+  display: grid;
+  gap: 10px;
+}
+
+.science-toggle {
+  width: fit-content;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--blue);
+  cursor: pointer;
+  font-weight: 750;
+}
+
+.science-popup {
+  display: none;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #f8fbfd;
+}
+
+.evidence-recommendation.open .science-popup {
+  display: block;
+}
+
+.science-popup span {
+  display: block;
+  color: var(--ink);
+  font-weight: 800;
+}
+
+.science-popup p + span {
+  margin-top: 10px;
+}
+
+.prevention-grid {
+  grid-template-columns: 1fr 1fr;
+}
+
+.prevention-grid h4 {
+  margin-bottom: 12px;
+}
+
+.checklist {
+  display: grid;
+  gap: 10px;
+}
+
+.checklist-item {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #ffffff;
+  color: var(--muted);
+  font-weight: 650;
+}
+
+.prevention-grid ul {
+  display: grid;
+  gap: 10px;
+  padding-left: 18px;
+  color: var(--muted);
+  font-weight: 650;
 }
 
 .achievement-card {
@@ -945,6 +1076,16 @@ a {
   margin-top: 16px;
   padding: 22px;
   background: #ffffff;
+}
+
+.age-guidance-card {
+  margin-top: 16px;
+  padding: 22px;
+  background: #ffffff;
+}
+
+.age-guidance-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
 .tooth-legend {
@@ -1335,6 +1476,7 @@ a {
 }
 
 .feature-showcase,
+.curriculum-grid,
 .expansion-timeline,
 .impact-metrics-grid {
   display: grid;
@@ -1346,11 +1488,16 @@ a {
   grid-template-columns: repeat(5, minmax(0, 1fr));
 }
 
+.curriculum-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 .impact-metrics-grid {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .feature-showcase div,
+.curriculum-grid div,
 .expansion-timeline div {
   padding: 18px;
   border: 1px solid var(--line);
@@ -1359,19 +1506,85 @@ a {
 }
 
 .feature-showcase strong,
+.curriculum-grid strong,
 .expansion-timeline strong {
   display: block;
   margin-bottom: 6px;
 }
 
 .feature-showcase p,
+.curriculum-grid p,
 .expansion-timeline p {
   font-size: 0.95rem;
+}
+
+.mission-statement {
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: #ffffff;
 }
 
 .expansion-timeline {
   position: relative;
   grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+/* Access, team, and caregiver modules */
+.module-panel {
+  padding: clamp(22px, 4vw, 34px);
+}
+
+.access-questions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.access-question-card div {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.access-question-card .selected {
+  background: #eef6ff;
+  border-color: var(--blue);
+  color: var(--blue);
+}
+
+.access-result-card,
+.team-detail {
+  margin-top: 16px;
+  padding: 22px;
+  background: #ffffff;
+}
+
+.access-result-card ul {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+  padding-left: 18px;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.team-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.team-card {
+  cursor: pointer;
+  text-align: left;
+}
+
+.team-card:hover {
+  border-color: var(--blue);
+  box-shadow: 0 12px 24px rgba(18, 36, 58, 0.08);
+}
+
+.resource-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 /* Myth quiz */
@@ -1498,10 +1711,17 @@ a {
   .hero,
   .results-grid,
   .habit-grid,
+  .clinical-grid,
+  .prevention-grid,
+  .age-guidance-grid,
   .impact-two-column,
   .feature-showcase,
+  .curriculum-grid,
   .impact-metrics-grid,
   .expansion-timeline,
+  .access-questions,
+  .team-grid,
+  .resource-grid,
   .explorer-grid,
   .achievement-list,
   .analytics-grid,

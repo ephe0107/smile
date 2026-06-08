@@ -6,6 +6,7 @@
 
 const RESULTS_API = "/results";
 const EXPLORER_ANALYTICS_API = "/explorer-analytics";
+const ENGAGEMENT_ANALYTICS_API = "/engagement-analytics";
 
 // Category explanations turn the score into education, not just a number.
 const categoryInfo = {
@@ -275,6 +276,84 @@ const ageFacts = {
   18: ["Adult dentition", "Most permanent teeth are present, though wisdom teeth vary widely."],
 };
 
+const ageGuidance = {
+  "5-7": {
+    title: "Ages 5-7: mixed dentition begins",
+    challenges: "First permanent molars erupt behind baby teeth, and children may still need help brushing hard-to-reach areas.",
+    prevention: "Use fluoride toothpaste, brush with adult supervision, and protect six-year molars with careful cleaning.",
+    biology: "Permanent molars erupt without replacing baby teeth, so they may be missed during brushing.",
+    clinical: "Dentists look for early plaque buildup, eruption patterns, and early cavity risk in deep molar grooves.",
+  },
+  "8-11": {
+    title: "Ages 8-11: eruption progression",
+    challenges: "More permanent teeth erupt, spaces change, and plaque can collect around new teeth.",
+    prevention: "Build flossing habits, brush along the gumline, and use water after snacks.",
+    biology: "Plaque biofilm forms when bacteria attach to tooth surfaces and feed on sugars.",
+    clinical: "Dentists check gum health, plaque levels, and whether new teeth are erupting in a healthy position.",
+  },
+  "12-14": {
+    title: "Ages 12-14: orthodontic and sports risk",
+    challenges: "Braces or aligners can trap plaque, and sports can increase dental injury risk.",
+    prevention: "Clean around brackets carefully, use interdental brushes if needed, and wear a sports mouthguard.",
+    biology: "Plaque around brackets can cause white spot lesions when enamel loses minerals.",
+    clinical: "Dentists and orthodontists watch for enamel changes, gingivitis, and mouthguard needs.",
+  },
+  "15-18": {
+    title: "Ages 15-18: independence and long-term habits",
+    challenges: "Teens make more independent choices about diet, energy drinks, oral hygiene, and dental visits.",
+    prevention: "Limit acidic drinks, keep fluoride toothpaste in the routine, and stay connected to regular dental care.",
+    biology: "Frequent acid exposure can weaken enamel, while saliva and fluoride help repair early mineral loss.",
+    clinical: "Dental teams may monitor erosion, wisdom teeth, gum inflammation, and self-management routines.",
+  },
+};
+
+const clinicalFindingCards = [
+  ["Plaque accumulation", "Sticky biofilm can collect near the gumline and between teeth when brushing or flossing is inconsistent."],
+  ["Gingivitis", "Gums may look red, puffy, or bleed when plaque irritates the gumline."],
+  ["Early caries risk", "Frequent sugar plus plaque bacteria can create acids that weaken enamel."],
+  ["White spot lesions", "Chalky white areas can be an early sign that enamel minerals are being lost."],
+  ["Enamel erosion", "Acidic drinks, including some energy drinks, can soften and wear enamel over time."],
+  ["Orthodontic hygiene", "Braces and aligners can create extra plaque traps that need careful cleaning."],
+  ["Sports injuries", "Mouthguards help lower the chance of broken or injured teeth during contact sports."],
+  ["Eruption patterns", "Dentists track whether teeth are coming in at the expected stage and position."],
+];
+
+const scienceExplanations = {
+  flossing: ["Why This Matters", "Food and plaque can stay between teeth where toothbrush bristles cannot reach.", "The Science Behind This Recommendation", "Plaque biofilm near the gums can trigger inflammation and bleeding. Flossing disrupts biofilm between teeth."],
+  diet: ["Why This Matters", "Frequent sugary or acidic drinks give bacteria more chances to produce acids.", "The Science Behind This Recommendation", "Bacteria metabolize sugars and release acids that can demineralize enamel. Saliva and fluoride help repair early mineral loss."],
+  fluoride: ["Why This Matters", "Fluoride supports enamel strength during daily acid challenges.", "The Science Behind This Recommendation", "Fluoride helps remineralization, making enamel more resistant to future acid attacks."],
+  care: ["Why This Matters", "Regular dental care supports prevention and early detection.", "The Science Behind This Recommendation", "Dental professionals can identify plaque, gum inflammation, eruption concerns, early caries risk, and injury risks before they become larger problems."],
+  brushing: ["Why This Matters", "Brushing removes plaque from tooth surfaces before it irritates gums or feeds acid-producing bacteria.", "The Science Behind This Recommendation", "Biofilm forms daily. Brushing with fluoride toothpaste disrupts biofilm and delivers fluoride to enamel."],
+};
+
+const accessQuestionsData = [
+  ["regularDentist", "Do you have a regular dentist?"],
+  ["pastYear", "Have you seen a dentist in the past year?"],
+  ["transport", "Is transportation a challenge?"],
+  ["cost", "Is cost a challenge?"],
+  ["nervous", "Do you feel nervous about dental visits?"],
+];
+
+const oralHealthTeam = [
+  ["General Dentist", "Checks teeth, gums, growth, cavities, and prevention needs.", "Coordinates care and helps families make prevention plans."],
+  ["Pediatric Dentist", "Focuses on children and adolescents, including growth, behaviour, and prevention.", "Supports young patients with age-appropriate dental care."],
+  ["Orthodontist", "Guides jaw and tooth alignment, braces, and bite development.", "Works with dentists to protect hygiene during orthodontic care."],
+  ["Dental Hygienist", "Teaches brushing/flossing, removes plaque and calculus, and supports prevention.", "Helps translate daily habits into practical routines."],
+  ["Dental Assistant", "Supports patient comfort, dental procedures, and infection control.", "Helps the dental visit feel organized and less stressful."],
+  ["Family Physician", "Notices general health issues and can connect families to dental care.", "Supports oral-systemic health and early referral."],
+  ["Pharmacist", "Explains medicines, dry mouth risks, and sugar-free medication options when relevant.", "Helps families understand medication-related oral health effects."],
+  ["Dietitian", "Helps with nutrition choices that support teeth and whole-body health.", "Connects diet patterns, sugar frequency, and enamel protection."],
+];
+
+const caregiverResourcesData = [
+  ["Age-specific guidance", "Ages 5-7 often need brushing help; ages 8-11 build flossing skill; teens need independence with support."],
+  ["Brushing supervision", "Children often need adults to check technique until they can clean all tooth surfaces well."],
+  ["Fluoride education", "Fluoride toothpaste helps strengthen enamel and supports cavity prevention."],
+  ["Nutrition recommendations", "Limit frequent sugary or acidic drinks and encourage water with meals and snacks."],
+  ["Dental visit guidance", "Regular visits support prevention, early detection, and confidence with dental care."],
+  ["Sports mouthguards", "A well-fitting mouthguard can help prevent dental injuries during contact sports."],
+];
+
 let currentQuestionIndex = 0;
 let selectedAnswers = Array(quizQuestions.length).fill(null);
 let finalResult = null;
@@ -302,7 +381,11 @@ const strongestHabitText = document.querySelector("#strongestHabitText");
 const weakestHabit = document.querySelector("#weakestHabit");
 const weakestHabitText = document.querySelector("#weakestHabitText");
 const categoryList = document.querySelector("#categoryList");
+const curriculumCategoryList = document.querySelector("#curriculumCategoryList");
 const recommendationList = document.querySelector("#recommendationList");
+const clinicalGrid = document.querySelector("#clinicalGrid");
+const dailyChecklist = document.querySelector("#dailyChecklist");
+const weeklyGoals = document.querySelector("#weeklyGoals");
 const achievementList = document.querySelector("#achievementList");
 const saveStatus = document.querySelector("#saveStatus");
 const viewDashboardBtn = document.querySelector("#viewDashboardBtn");
@@ -327,7 +410,14 @@ const dentalChart = document.querySelector("#dentalChart");
 const toothInfo = document.querySelector("#toothInfo");
 const ageFactTitle = document.querySelector("#ageFactTitle");
 const ageFact = document.querySelector("#ageFact");
+const ageGuidanceTitle = document.querySelector("#ageGuidanceTitle");
+const ageGuidanceGrid = document.querySelector("#ageGuidanceGrid");
 const explorerStatus = document.querySelector("#explorerStatus");
+const accessQuestions = document.querySelector("#accessQuestions");
+const accessResult = document.querySelector("#accessResult");
+const teamGrid = document.querySelector("#teamGrid");
+const teamDetail = document.querySelector("#teamDetail");
+const caregiverResources = document.querySelector("#caregiverResources");
 const analyticsStatus = document.querySelector("#analyticsStatus");
 const refreshAnalyticsBtn = document.querySelector("#refreshAnalyticsBtn");
 const metricGrid = document.querySelector("#metricGrid");
@@ -468,6 +558,46 @@ function getCategoryScores() {
   );
 }
 
+function averageQuestionScore(matchQuestion) {
+  const matchingAnswers = quizQuestions
+    .map((question, index) => ({ question, answer: selectedAnswerFor(index) }))
+    .filter((item) => matchQuestion(item.question));
+  const earned = matchingAnswers.reduce((sum, item) => sum + item.answer.score, 0);
+  const possible = matchingAnswers.length * 10;
+
+  return possible ? Math.round((earned / possible) * 100) : 0;
+}
+
+function getCurriculumScores() {
+  return {
+    oralHygiene: {
+      label: "Oral Hygiene Score",
+      score: averageQuestionScore((question) => ["brushing", "flossing"].includes(question.category) || question.topic === "gum bleeding"),
+      explanation: "Combines brushing, flossing, bedtime brushing, brushing time, and gum-health habits.",
+    },
+    diet: {
+      label: "Diet Score",
+      score: averageQuestionScore((question) => question.category === "diet"),
+      explanation: "Looks at sugary drinks, sticky snacks, and water after meals or snacks.",
+    },
+    prevention: {
+      label: "Prevention Score",
+      score: averageQuestionScore((question) => ["fluoride toothpaste", "dental checkups", "bedtime brushing", "water after eating"].includes(question.topic)),
+      explanation: "Shows how daily protection habits and preventive care support long-term oral health.",
+    },
+    accessToCare: {
+      label: "Access to Care Score",
+      score: averageQuestionScore((question) => question.topic === "dental checkups"),
+      explanation: "Uses dental visit timing as a simple signal for connection to preventive care.",
+    },
+    knowledge: {
+      label: "Oral Health Knowledge Score",
+      score: averageQuestionScore((question) => ["brushing duration", "fluoride toothpaste"].includes(question.topic)),
+      explanation: "Reflects understanding of two key prevention ideas: brushing time and fluoride support.",
+    },
+  };
+}
+
 function getHabitExtremes() {
   const scoredHabits = quizQuestions.map((question, index) => ({
     topic: question.topic,
@@ -527,6 +657,7 @@ function buildResult() {
   const risk = getRiskLevel(score);
   const badge = getBadge(score);
   const categoryScores = getCategoryScores();
+  const curriculumScores = getCurriculumScores();
   const habits = getHabitExtremes();
   const baseResult = {
     score,
@@ -534,6 +665,7 @@ function buildResult() {
     riskClassName: risk.className,
     badge,
     categoryScores,
+    curriculumScores,
     strongestHabit: habits.strongest,
     weakestHabit: habits.weakest,
     recommendations: getRecommendations(),
@@ -566,6 +698,123 @@ function renderCategoryReport(categoryScores) {
     `;
 
     categoryList.appendChild(card);
+  });
+}
+
+function renderCurriculumCategoryReport(curriculumScores) {
+  curriculumCategoryList.innerHTML = "";
+
+  Object.values(curriculumScores).forEach((category) => {
+    const card = document.createElement("div");
+    card.className = "category-card curriculum-score-card";
+    card.innerHTML = `
+      <div class="category-topline">
+        <div>
+          <span>${category.label}</span>
+          <strong>${category.score}/100</strong>
+        </div>
+      </div>
+      <div class="bar-track" aria-hidden="true">
+        <div class="bar-fill" style="--value: ${category.score}%"></div>
+      </div>
+      <p>${category.explanation}</p>
+    `;
+
+    curriculumCategoryList.appendChild(card);
+  });
+}
+
+async function trackEngagement(event) {
+  try {
+    await fetch(ENGAGEMENT_ANALYTICS_API, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(event),
+    });
+  } catch (error) {
+    // Engagement tracking should never interrupt the learning experience.
+  }
+}
+
+function renderClinicalCards() {
+  clinicalGrid.innerHTML = "";
+
+  clinicalFindingCards.forEach(([title, text]) => {
+    const card = document.createElement("div");
+    card.className = "clinical-finding-card";
+    card.innerHTML = `
+      <strong>${title}</strong>
+      <p>${text}</p>
+    `;
+    clinicalGrid.appendChild(card);
+  });
+}
+
+function scienceForRecommendation(recommendation) {
+  const lower = recommendation.toLowerCase();
+  if (lower.includes("floss")) return scienceExplanations.flossing;
+  if (lower.includes("sugar") || lower.includes("snack") || lower.includes("water")) return scienceExplanations.diet;
+  if (lower.includes("fluoride")) return scienceExplanations.fluoride;
+  if (lower.includes("checkup") || lower.includes("gum") || lower.includes("bleeding")) return scienceExplanations.care;
+  return scienceExplanations.brushing;
+}
+
+function renderEvidenceRecommendations(recommendations) {
+  recommendationList.innerHTML = "";
+
+  recommendations.forEach((recommendation) => {
+    const [whyTitle, why, scienceTitle, science] = scienceForRecommendation(recommendation);
+    const item = document.createElement("li");
+    item.className = "evidence-recommendation";
+    item.innerHTML = `
+      <strong>${recommendation}</strong>
+      <button class="science-toggle" type="button">Science Behind This</button>
+      <div class="science-popup">
+        <span>${whyTitle}</span>
+        <p>${why}</p>
+        <span>${scienceTitle}</span>
+        <p>${science}</p>
+      </div>
+    `;
+    item.querySelector(".science-toggle").addEventListener("click", () => {
+      item.classList.toggle("open");
+      trackEngagement({ type: "science_popup", section: "recommendations", detail: recommendation });
+    });
+    recommendationList.appendChild(item);
+  });
+}
+
+function renderPreventionPlan(result) {
+  const weakCategory = Object.values(result.categoryScores).sort((a, b) => a.score - b.score)[0];
+  const checklistItems = [
+    "Brush twice with fluoride toothpaste",
+    "Brush for two minutes",
+    "Clean between teeth",
+    "Choose water after snacks",
+    "Check for sports mouthguard needs",
+  ];
+  const goals = [
+    `Focus on ${weakCategory.label.toLowerCase()} this week with one small daily habit.`,
+    "Pick one sugary drink swap for water.",
+    "Ask a parent, caregiver, or dental professional one prevention question.",
+  ];
+
+  dailyChecklist.innerHTML = "";
+  checklistItems.forEach((item) => {
+    const label = document.createElement("label");
+    label.className = "checklist-item";
+    label.innerHTML = `<input type="checkbox" /> <span>${item}</span>`;
+    label.querySelector("input").addEventListener("change", () => {
+      trackEngagement({ type: "prevention_checklist", section: "prevention_plan", detail: item, value: label.querySelector("input").checked });
+    });
+    dailyChecklist.appendChild(label);
+  });
+
+  weeklyGoals.innerHTML = "";
+  goals.forEach((goal) => {
+    const item = document.createElement("li");
+    item.textContent = goal;
+    weeklyGoals.appendChild(item);
   });
 }
 
@@ -649,14 +898,11 @@ function renderResults() {
   weakestHabitText.textContent = finalResult.weakestHabit.feedback;
   renderTrend(null);
   renderCategoryReport(finalResult.categoryScores);
+  renderCurriculumCategoryReport(finalResult.curriculumScores);
+  renderClinicalCards();
+  renderPreventionPlan(finalResult);
   renderAchievements(finalResult.achievements);
-
-  recommendationList.innerHTML = "";
-  finalResult.recommendations.forEach((recommendation) => {
-    const item = document.createElement("li");
-    item.textContent = recommendation;
-    recommendationList.appendChild(item);
-  });
+  renderEvidenceRecommendations(finalResult.recommendations);
 
   saveResult(finalResult);
 }
@@ -888,14 +1134,123 @@ function renderExplorer(age) {
   renderMiniDiagram(lostDiagram, [], "lost", lost);
   ageFactTitle.textContent = fact[0];
   ageFact.textContent = fact[1];
+  renderAgeGuidance(age);
   toothInfo.textContent = "Hover, tap, or focus a tooth to see development details.";
   renderDentalChart(age);
+}
+
+function getAgeGuidance(age) {
+  if (age <= 7) return ageGuidance["5-7"];
+  if (age <= 11) return ageGuidance["8-11"];
+  if (age <= 14) return ageGuidance["12-14"];
+  return ageGuidance["15-18"];
+}
+
+function renderAgeGuidance(age) {
+  const guidance = getAgeGuidance(age);
+  ageGuidanceTitle.textContent = guidance.title;
+  ageGuidanceGrid.innerHTML = "";
+
+  [
+    ["Common challenges", guidance.challenges],
+    ["Prevention recommendations", guidance.prevention],
+    ["Biological explanation", guidance.biology],
+    ["Clinical relevance", guidance.clinical],
+  ].forEach(([title, text]) => {
+    const card = document.createElement("div");
+    card.innerHTML = `<strong>${title}</strong><p>${text}</p>`;
+    ageGuidanceGrid.appendChild(card);
+  });
 }
 
 function saveAgeLookup() {
   trackExplorerEvent({
     type: "age_lookup",
     age: Number(ageSlider.value),
+  });
+}
+
+function renderAccessAssessment() {
+  const answers = {};
+  accessQuestions.innerHTML = "";
+
+  accessQuestionsData.forEach(([key, question]) => {
+    const card = document.createElement("article");
+    card.className = "access-question-card";
+    card.innerHTML = `
+      <strong>${question}</strong>
+      <div>
+        <button class="btn btn-soft" type="button" data-value="yes">Yes</button>
+        <button class="btn btn-soft" type="button" data-value="no">No</button>
+      </div>
+    `;
+
+    card.querySelectorAll("button").forEach((button) => {
+      button.addEventListener("click", () => {
+        answers[key] = button.dataset.value;
+        card.querySelectorAll("button").forEach((btn) => btn.classList.remove("selected"));
+        button.classList.add("selected");
+        renderAccessResult(answers);
+        trackEngagement({ type: "access_assessment", section: "access", detail: key, value: button.dataset.value });
+      });
+    });
+
+    accessQuestions.appendChild(card);
+  });
+}
+
+function renderAccessResult(answers) {
+  const barriers = [
+    answers.regularDentist === "no" ? "finding a regular dental home" : null,
+    answers.pastYear === "no" ? "planning a preventive dental visit" : null,
+    answers.transport === "yes" ? "transportation support" : null,
+    answers.cost === "yes" ? "cost-aware care options" : null,
+    answers.nervous === "yes" ? "dental anxiety support" : null,
+  ].filter(Boolean);
+
+  if (!Object.keys(answers).length) return;
+
+  accessResult.innerHTML = `
+    <span class="result-label">Supportive resources</span>
+    <h3>${barriers.length ? "Factors that may influence oral health care" : "Strong access foundations"}</h3>
+    <p>${barriers.length ? `You selected support needs around ${barriers.join(", ")}.` : "Your answers suggest fewer access barriers right now."}</p>
+    <ul>
+      <li>Ask a parent, caregiver, school nurse, clinic, or dentist about local preventive care options.</li>
+      <li>If dental visits feel stressful, tell the dental team. They can explain steps, pause, and help you feel safer.</li>
+      <li>Transportation, cost, and anxiety are community health factors, not personal failures.</li>
+    </ul>
+  `;
+}
+
+function renderOralHealthTeam() {
+  teamGrid.innerHTML = "";
+
+  oralHealthTeam.forEach(([role, summary, teamwork]) => {
+    const button = document.createElement("button");
+    button.className = "team-card";
+    button.type = "button";
+    button.innerHTML = `<strong>${role}</strong><p>${summary}</p>`;
+    button.addEventListener("click", () => {
+      teamDetail.innerHTML = `
+        <span class="result-label">Team role</span>
+        <h3>${role}</h3>
+        <p>${summary}</p>
+        <p><strong>How they work with others:</strong> ${teamwork}</p>
+      `;
+      trackEngagement({ type: "team_card", section: "oral_health_team", detail: role });
+    });
+    teamGrid.appendChild(button);
+  });
+}
+
+function renderCaregiverResources() {
+  caregiverResources.innerHTML = "";
+
+  caregiverResourcesData.forEach(([title, text]) => {
+    const card = document.createElement("article");
+    card.className = "resource-card";
+    card.innerHTML = `<strong>${title}</strong><p>${text}</p>`;
+    caregiverResources.appendChild(card);
   });
 }
 
@@ -1019,8 +1374,35 @@ function renderRiskChart(counts, total) {
   });
 }
 
-function renderAnalytics(results) {
+function getEngagementSummary(engagement = []) {
+  const events = Array.isArray(engagement) ? engagement : [];
+  const mythAnswers = events.filter((event) => event.type === "myth_quiz_answer");
+  const correctMythAnswers = mythAnswers.filter((event) => event.value === true).length;
+
+  return {
+    totalEvents: events.length,
+    moduleOpens: events.filter((event) => event.type === "module_open").length,
+    preventionActions: events.filter((event) => event.type === "prevention_checklist").length,
+    sciencePopups: events.filter((event) => event.type === "science_popup").length,
+    mythCorrectRate: mythAnswers.length ? `${percent(correctMythAnswers, mythAnswers.length)}%` : "Not enough data",
+    commonSection: mostCommonFromCounts(countBy(events, (event) => event.section || "General")),
+  };
+}
+
+async function fetchJsonApi(url, fallbackKey) {
+  const response = await fetch(url);
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.error || `${fallbackKey} could not be loaded.`);
+  }
+
+  return data;
+}
+
+function renderAnalytics(results, engagement = []) {
   const total = results.length;
+  const engagementSummary = getEngagementSummary(engagement);
 
   if (!total) {
     analyticsStatus.textContent = "No completed quizzes yet.";
@@ -1044,7 +1426,9 @@ function renderAnalytics(results) {
   const commonWeakness = mostCommonFromCounts(weaknessCounts);
   const commonRecommendation = mostCommonFromCounts(recommendationCounts);
 
-  analyticsStatus.textContent = `${total} completed quiz${total === 1 ? "" : "zes"} analyzed${demoCount ? ` • ${demoCount} seeded demo records` : ""}`;
+  analyticsStatus.textContent =
+    `${total} completed quiz${total === 1 ? "" : "zes"} analyzed${demoCount ? ` • ${demoCount} seeded demo records` : ""}` +
+    `${engagementSummary.totalEvents ? ` • ${engagementSummary.totalEvents} education engagement events` : ""}`;
   renderMetricCards([
     { label: "Total quizzes completed", value: total, note: "Saved completions in backend" },
     { label: "Average Smile Score", value: `${averageScore}/100`, note: "Overall education outcome" },
@@ -1053,6 +1437,9 @@ function renderAnalytics(results) {
     { label: "High Risk", value: `${percent(riskCounts["High Risk"] || 0, total)}%`, note: "Participants needing priority education" },
     { label: "Most common weakness", value: commonWeakness.label, note: `${commonWeakness.count} result${commonWeakness.count === 1 ? "" : "s"}` },
     { label: "Most common recommendation", value: commonRecommendation.label, note: `${commonRecommendation.count} time${commonRecommendation.count === 1 ? "" : "s"} recommended` },
+    { label: "Education engagement", value: engagementSummary.totalEvents, note: "Anonymous module interactions saved" },
+    { label: "Prevention checklist actions", value: engagementSummary.preventionActions, note: "Daily habit-building interactions" },
+    { label: "Myth quiz accuracy", value: engagementSummary.mythCorrectRate, note: "Learning check performance" },
   ]);
 
   renderHorizontalChart(scoreDistributionChart, getScoreDistribution(results), total);
@@ -1066,21 +1453,19 @@ function renderAnalytics(results) {
 }
 
 async function loadAnalytics() {
-  analyticsStatus.textContent = "Loading analytics from saved results...";
+  analyticsStatus.textContent = "Loading analytics from saved results and education engagement...";
   metricGrid.innerHTML = "";
   scoreDistributionChart.innerHTML = "";
   riskDistributionChart.innerHTML = "";
   issueChart.innerHTML = "";
 
   try {
-    const response = await fetch(RESULTS_API);
-    const data = await response.json();
+    const [resultData, engagementData] = await Promise.all([
+      fetchJsonApi(RESULTS_API, "Analytics"),
+      fetchJsonApi(ENGAGEMENT_ANALYTICS_API, "Engagement analytics"),
+    ]);
 
-    if (!response.ok) {
-      throw new Error(data.error || "Analytics could not be loaded.");
-    }
-
-    renderAnalytics(data.results);
+    renderAnalytics(resultData.results, engagementData.engagement);
   } catch (error) {
     analyticsStatus.textContent = `Could not load analytics: ${error.message}`;
     scoreDistributionChart.innerHTML = `<div class="empty-history">Start the backend to calculate analytics.</div>`;
@@ -1091,8 +1476,9 @@ async function loadAnalytics() {
   }
 }
 
-function renderImpactMetricCards(results) {
+function renderImpactMetricCards(results, engagement = []) {
   const total = results.length;
+  const engagementSummary = getEngagementSummary(engagement);
 
   if (!total) {
     impactMetricsStatus.textContent = "No completed quizzes yet. Complete a Smile Check to populate live metrics.";
@@ -1120,6 +1506,9 @@ function renderImpactMetricCards(results) {
     { label: "Education gap", value: commonWeakness.label, note: "Most frequent weakest category" },
     { label: "Achievements unlocked", value: unlockedAchievements, note: "Positive reinforcement moments" },
     { label: "Moderate/High Risk", value: `${percent((riskCounts["Moderate Risk"] || 0) + (riskCounts["High Risk"] || 0), total)}%`, note: "Potential target group for outreach" },
+    { label: "Education interactions", value: engagementSummary.totalEvents, note: "Anonymous learning engagement events" },
+    { label: "Most used education area", value: engagementSummary.commonSection.label, note: `${engagementSummary.commonSection.count} interaction${engagementSummary.commonSection.count === 1 ? "" : "s"}` },
+    { label: "Science popups opened", value: engagementSummary.sciencePopups, note: "Evidence-based explanation views" },
     { label: "Seeded demo data", value: demoCount, note: "Clearly marked sample records for presentation" },
   ];
 
@@ -1141,14 +1530,12 @@ async function loadImpactMetrics() {
   impactMetricsGrid.innerHTML = "";
 
   try {
-    const response = await fetch(RESULTS_API);
-    const data = await response.json();
+    const [resultData, engagementData] = await Promise.all([
+      fetchJsonApi(RESULTS_API, "Impact metrics"),
+      fetchJsonApi(ENGAGEMENT_ANALYTICS_API, "Engagement metrics"),
+    ]);
 
-    if (!response.ok) {
-      throw new Error(data.error || "Impact metrics could not be loaded.");
-    }
-
-    renderImpactMetricCards(data.results);
+    renderImpactMetricCards(resultData.results, engagementData.engagement);
   } catch (error) {
     impactMetricsStatus.textContent = `Could not load impact metrics: ${error.message}`;
     impactMetricsGrid.innerHTML = `
@@ -1182,6 +1569,7 @@ function renderMyths() {
 
         feedback.textContent = `${isCorrect ? "Correct!" : "Not quite."} ${myth.feedback}`;
         feedback.className = `myth-feedback ${isCorrect ? "correct" : "incorrect"}`;
+        trackEngagement({ type: "myth_quiz_answer", section: "myth_quiz", detail: myth.statement, value: isCorrect });
       });
     });
 
@@ -1305,6 +1693,21 @@ document.querySelectorAll("[data-screen-link]").forEach((link) => {
       loadImpactMetrics();
     }
 
+    if (screenId === "access") {
+      renderAccessAssessment();
+      trackEngagement({ type: "module_open", section: "access", detail: "Oral Health Access Assessment" });
+    }
+
+    if (screenId === "team") {
+      renderOralHealthTeam();
+      trackEngagement({ type: "module_open", section: "team", detail: "Meet Your Oral Health Team" });
+    }
+
+    if (screenId === "caregivers") {
+      renderCaregiverResources();
+      trackEngagement({ type: "module_open", section: "caregivers", detail: "Parent and Caregiver Resources" });
+    }
+
     if (screenId === "myths") {
       renderMyths();
     }
@@ -1315,3 +1718,6 @@ document.querySelectorAll("[data-screen-link]").forEach((link) => {
 
 renderQuestion();
 renderExplorer(Number(ageSlider.value));
+renderAccessAssessment();
+renderOralHealthTeam();
+renderCaregiverResources();

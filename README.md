@@ -4,11 +4,13 @@ A polished full-stack oral health education platform for youth.
 
 Users answer a 10-question Smile Check, receive a Smile Score out of 100, unlock badges and achievements, review a personalized oral health report, see a visual risk dashboard, get dynamic recommendations, compare progress over time, try a dental myth quiz, and finish with a certificate screen.
 
-The project also includes an admin analytics dashboard that uses saved backend results to measure educational impact and identify oral health education gaps in youth populations.
+The platform now connects its learning features to University of Sydney DMD-style curriculum themes, including clinical sciences, oral biosciences, evidence-based prevention, health promotion, social access factors, professional communication, and interprofessional collaboration.
 
-It also includes a Tooth Development Explorer for ages 5 to 18, with an interactive dental chart, expected eruption guidance, primary tooth loss notes, and engagement analytics.
+The project also includes an admin analytics dashboard that uses saved backend results and anonymous education engagement events to measure educational impact and identify oral health education gaps in youth populations.
 
-A dedicated Project Impact page presents the problem, goal, platform features, live backend metrics, and future expansion plan in a format suitable for a dental school admissions committee.
+It also includes a Tooth Development Explorer for ages 5 to 18, with an interactive dental chart, expected eruption guidance, primary tooth loss notes, age-specific clinical relevance, prevention guidance, biology explanations, and engagement analytics.
+
+A dedicated Project Impact page presents the problem, mission, curriculum alignment, platform features, live backend metrics, communication goals, and future expansion plan in a format suitable for a dental school admissions committee.
 
 ## How to Run It Locally
 
@@ -49,8 +51,9 @@ node scripts/seed-demo-data.js
 This creates:
 
 - 250 realistic seeded demo quiz results
-- Realistic habits, scores, risk levels, recommendations, achievements, and reports
+- Realistic habits, scores, risk levels, recommendations, achievements, reports, and curriculum-style category scores
 - Demo tooth explorer engagement analytics
+- Demo education engagement analytics for learning modules, prevention actions, and quiz interactions
 
 Seeded records are clearly marked with:
 
@@ -79,13 +82,21 @@ The backend uses local file storage and saves quiz history in:
 data/results.json
 ```
 
-That file is ignored by Git so local results do not get uploaded.
+It also stores anonymous education engagement analytics in:
+
+```text
+data/engagement-analytics.json
+```
+
+Local data files are ignored by Git so personal or demo results do not get uploaded.
 
 Endpoints:
 
 - `POST /results` - saves a completed quiz result.
 - `GET /results` - returns previous quiz results.
 - `POST /explorer-analytics` - saves tooth development age lookups and tooth interactions.
+- `POST /engagement-analytics` - saves anonymous education engagement events.
+- `GET /engagement-analytics` - returns anonymous education engagement events for dashboards.
 
 Saved fields:
 
@@ -93,6 +104,7 @@ Saved fields:
 - `riskLevel`
 - `badge`
 - `categoryScores`
+- `curriculumScores`
 - `report`
 - `recommendations`
 - `achievements`
@@ -115,8 +127,22 @@ The admin dashboard displays:
 - Score distribution chart
 - Risk distribution chart
 - Most common oral health issues chart
+- Education engagement events
+- Prevention checklist actions
+- Myth quiz learning performance
 
 These insights demonstrate how the platform could be used as a public-health education tool to find prevention gaps across youth participants.
+
+## Curriculum-Aligned Learning Features
+
+The platform keeps the original youth-focused experience while adding:
+
+- Evidence-based recommendation cards with "Why this matters" and "Science behind this recommendation."
+- Clinical education cards explaining what dentists look for, such as plaque, gum health, early caries risk, erosion, orthodontic hygiene, and eruption patterns.
+- A prevention plan with daily checklist actions, weekly goals, and habit-building guidance.
+- An optional oral health access assessment that frames cost, transport, dental anxiety, and regular care as support factors, not personal failings.
+- A "Meet Your Oral Health Team" section explaining how dentists, hygienists, physicians, pharmacists, dietitians, and other professionals work together.
+- Parent and caregiver resources with age-specific guidance.
 
 ## Tooth Development Explorer
 
@@ -129,6 +155,7 @@ The explorer lets users select ages 5 to 18 and shows:
 - Primary teeth typically lost around that age
 - Hover/tap details for each tooth
 - Age-specific educational facts
+- Common challenges, prevention steps, biological explanations, and clinical relevance by age group
 
 Engagement events are stored locally in:
 

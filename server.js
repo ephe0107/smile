@@ -14,6 +14,7 @@ const ROOT = __dirname;
 const DATA_DIR = path.join(ROOT, "data");
 const RESULTS_FILE = path.join(DATA_DIR, "results.json");
 const EXPLORER_ANALYTICS_FILE = path.join(DATA_DIR, "tooth-explorer-analytics.json");
+const ENGAGEMENT_ANALYTICS_FILE = path.join(DATA_DIR, "engagement-analytics.json");
 
 // These content types help the browser understand each file.
 const contentTypes = {
@@ -95,6 +96,7 @@ function normalizeResult(result) {
   const achievements = Array.isArray(result.achievements) ? result.achievements : [];
   const report = Array.isArray(result.report) ? result.report : [];
   const categoryScores = result.categoryScores || {};
+  const curriculumScores = result.curriculumScores || {};
   const strongestHabit = result.strongestHabit || {};
   const weakestHabit = result.weakestHabit || {};
 
@@ -132,6 +134,7 @@ function normalizeResult(result) {
       message: String(badge.message || "").trim(),
     },
     categoryScores,
+    curriculumScores,
     strongestHabit: {
       topic: String(strongestHabit.topic || "").trim(),
       score: Number(strongestHabit.score || 0),
@@ -231,6 +234,43 @@ async function saveExplorerAnalytics(request, response) {
   }
 }
 
+async function saveEngagementAnalytics(request, response) {
+  try {
+    const body = await readRequestBody(request);
+    const event = JSON.parse(body);
+    const type = String(event.type || "").trim();
+
+    if (!type) {
+      throw new Error("Engagement event type is required.");
+    }
+
+    const analytics = readJsonArray(ENGAGEMENT_ANALYTICS_FILE);
+    const savedEvent = {
+      id: crypto.randomUUID(),
+      type,
+      section: event.section ? String(event.section).trim() : null,
+      detail: event.detail ? String(event.detail).trim() : null,
+      value: event.value ?? null,
+      createdAt: new Date().toISOString(),
+    };
+
+    analytics.unshift(savedEvent);
+    writeJsonArray(ENGAGEMENT_ANALYTICS_FILE, analytics.slice(0, 1000));
+
+    sendJson(response, 201, { event: savedEvent });
+  } catch (error) {
+    sendJson(response, 400, { error: error.message || "Engagement analytics could not be saved." });
+  }
+}
+
+function getEngagementAnalytics(response) {
+  try {
+    sendJson(response, 200, { engagement: readJsonArray(ENGAGEMENT_ANALYTICS_FILE) });
+  } catch (error) {
+    sendJson(response, 500, { error: "Engagement analytics could not be loaded." });
+  }
+}
+
 function serveFile(request, response) {
   const requestPath = request.url === "/" ? "/index.html" : request.url.split("?")[0];
   const decodedPath = decodeURIComponent(requestPath);
@@ -277,6 +317,16 @@ const server = http.createServer((request, response) => {
 
   if (request.url === "/explorer-analytics" && request.method === "POST") {
     saveExplorerAnalytics(request, response);
+    return;
+  }
+
+  if (request.url === "/engagement-analytics" && request.method === "POST") {
+    saveEngagementAnalytics(request, response);
+    return;
+  }
+
+  if (request.url === "/engagement-analytics" && request.method === "GET") {
+    getEngagementAnalytics(response);
     return;
   }
 

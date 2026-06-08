@@ -36,6 +36,9 @@
       <a href="#dashboard" data-screen-link="dashboard">History</a>
       <a href="#admin" data-screen-link="admin">Analytics</a>
       <a href="#impact" data-screen-link="impact">Impact</a>
+      <a href="#access" data-screen-link="access">Access</a>
+      <a href="#team" data-screen-link="team">Team</a>
+      <a href="#caregivers" data-screen-link="caregivers">Parents</a>
       <a href="#myths" data-screen-link="myths">Myths</a>
       <a href="#about">About</a>
     </nav>
@@ -172,11 +175,43 @@
           <span class="report-note">Scores show how each habit area supports prevention.</span>
         </div>
         <div class="category-list" id="categoryList"></div>
+        <div class="category-list curriculum-score-list" id="curriculumCategoryList"></div>
       </article>
 
       <article class="recommendation-card">
         <h3>Recommendation Engine</h3>
         <ul id="recommendationList"></ul>
+      </article>
+
+      <article class="clinical-card">
+        <div class="report-heading">
+          <div>
+            <span class="result-label">Clinical sciences and skills</span>
+            <h3>What a dentist looks for</h3>
+          </div>
+          <span class="report-note">Educational only. This does not diagnose disease.</span>
+        </div>
+        <div class="clinical-grid" id="clinicalGrid"></div>
+      </article>
+
+      <article class="prevention-card">
+        <div class="report-heading">
+          <div>
+            <span class="result-label">Prevention and health promotion</span>
+            <h3>Personalized Prevention Plan</h3>
+          </div>
+          <span class="report-note">Build small habits that protect teeth over time.</span>
+        </div>
+        <div class="prevention-grid">
+          <div>
+            <h4>Daily Oral Health Checklist</h4>
+            <div class="checklist" id="dailyChecklist"></div>
+          </div>
+          <div>
+            <h4>Weekly Prevention Goals</h4>
+            <ul id="weeklyGoals"></ul>
+          </div>
+        </div>
       </article>
 
       <article class="achievement-card">
@@ -264,11 +299,64 @@
           <p id="ageFact">Children often have a mix of primary and permanent teeth during the school-age years.</p>
         </article>
 
+        <article class="age-guidance-card">
+          <span class="result-label">Age-specific guidance</span>
+          <h3 id="ageGuidanceTitle">Mixed dentition and prevention</h3>
+          <div class="age-guidance-grid" id="ageGuidanceGrid"></div>
+        </article>
+
         <p class="save-status" id="explorerStatus" role="status"></p>
       </div>
     </section>
 
-    <!-- 5. Dashboard / History section -->
+    <!-- 5. Oral health access section -->
+    <section class="access section-screen" id="access">
+      <div class="section-heading">
+        <p class="eyebrow">Social and cultural oral health</p>
+        <h2>Oral Health Access Assessment</h2>
+        <p>These questions explore support needs and barriers to care. Barriers are not personal shortcomings.</p>
+      </div>
+
+      <div class="module-panel">
+        <div class="access-questions" id="accessQuestions"></div>
+        <article class="access-result-card" id="accessResult">
+          <span class="result-label">Supportive resources</span>
+          <h3>Complete the access check to see resources.</h3>
+          <p>Resources may include dental visit planning, anxiety support, transportation ideas, and cost-aware care options.</p>
+        </article>
+      </div>
+    </section>
+
+    <!-- 6. Interprofessional team section -->
+    <section class="team section-screen" id="team">
+      <div class="section-heading">
+        <p class="eyebrow">Interprofessional collaboration</p>
+        <h2>Meet Your Oral Health Team</h2>
+        <p>Explore how different health professionals work together to support oral health.</p>
+      </div>
+
+      <div class="module-panel">
+        <div class="team-grid" id="teamGrid"></div>
+        <article class="team-detail" id="teamDetail">
+          <span class="result-label">Team role</span>
+          <h3>Select a team member</h3>
+          <p>Tap a card to learn how that professional supports children and adolescents.</p>
+        </article>
+      </div>
+    </section>
+
+    <!-- 7. Parent and caregiver resources section -->
+    <section class="caregivers section-screen" id="caregivers">
+      <div class="section-heading">
+        <p class="eyebrow">Parent and caregiver resources</p>
+        <h2>Practical guidance for families</h2>
+        <p>Concise prevention tips for supporting healthy habits at home, school, and sport.</p>
+      </div>
+
+      <div class="resource-grid" id="caregiverResources"></div>
+    </section>
+
+    <!-- 8. Dashboard / History section -->
     <section class="dashboard section-screen" id="dashboard">
       <div class="section-heading">
         <p class="eyebrow">Saved progress</p>
@@ -293,7 +381,7 @@
       </div>
     </section>
 
-    <!-- 6. Admin analytics section -->
+    <!-- 9. Admin analytics section -->
     <section class="admin section-screen" id="admin">
       <div class="section-heading">
         <p class="eyebrow">Public health dashboard</p>
@@ -359,6 +447,9 @@
           20 to 32 Smile Check connects preventive dentistry, education, and data-informed outreach
           in a format that can support children, parents, schools, and dental professionals.
         </p>
+        <p class="mission-statement">
+          Mission: To improve oral health literacy, preventive behaviours, and long-term oral health outcomes among children and adolescents through evidence-based, interactive, and accessible education.
+        </p>
       </div>
 
       <div class="impact-two-column">
@@ -388,6 +479,28 @@
       </article>
 
       <article class="impact-section-card">
+        <span class="result-label">University of Sydney DMD curriculum alignment</span>
+        <h3>Integrated themes demonstrated by the platform</h3>
+        <div class="curriculum-grid">
+          <div><strong>Clinical Sciences and Skills</strong><p>Links plaque, gingivitis, erosion, eruption patterns, orthodontic hygiene, and injury prevention to daily habits.</p></div>
+          <div><strong>Oral and Systemic Biosciences</strong><p>Explains biofilm, acid production, saliva, fluoride, inflammation, and oral-systemic health in youth-friendly language.</p></div>
+          <div><strong>Evidence-Based Practice</strong><p>Recommendations include why the habit matters and the science behind the advice.</p></div>
+          <div><strong>Prevention and Health Promotion</strong><p>Prioritizes self-management, prevention goals, streaks, and habit formation over treatment.</p></div>
+          <div><strong>Social and Cultural Oral Health</strong><p>Explores access barriers such as cost, transport, dental anxiety, and regular care without blame.</p></div>
+          <div><strong>Leadership and Communication</strong><p>Translates scientific concepts into language children, parents, and communities can use.</p></div>
+          <div><strong>Interprofessional Collaboration</strong><p>Shows how dental and health professionals work together to support oral health.</p></div>
+        </div>
+      </article>
+
+      <article class="impact-section-card">
+        <span class="result-label">Why communication matters in dentistry</span>
+        <h3>Turning science into action</h3>
+        <p>
+          Children and families are more likely to act on oral health advice when it is clear, practical, and connected to daily life. This platform translates clinical and bioscience concepts into short explanations, visuals, and interactive feedback so users understand not only what to do, but why it matters.
+        </p>
+      </article>
+
+      <article class="impact-section-card">
         <div class="dashboard-topline">
           <div>
             <span class="result-label">Live impact metrics</span>
@@ -411,7 +524,7 @@
       </article>
     </section>
 
-    <!-- 8. Mini myth quiz section -->
+    <!-- 10. Mini myth quiz section -->
     <section class="myths section-screen" id="myths">
       <div class="section-heading">
         <p class="eyebrow">Step 3</p>
@@ -426,7 +539,7 @@
       </div>
     </section>
 
-    <!-- 9. Final certificate screen -->
+    <!-- 11. Final certificate screen -->
     <section class="certificate section-screen" id="certificate">
       <div class="certificate-card">
         <p class="eyebrow">Completed</p>
