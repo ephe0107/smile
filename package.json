@@ -1,8 +1,8 @@
 {
-  "name": "smile-2032",
+  "name": "20-to-32-smile-check",
   "version": "1.0.0",
   "private": true,
-  "description": "A small personal website with a simple local backend.",
+  "description": "A full-stack educational oral health quiz website for youth.",
   "scripts": {
     "start": "node server.js",
     "dev": "node server.js"

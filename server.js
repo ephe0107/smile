@@ -1,13 +1,20 @@
+/* ==========================================================
+   20 to 32 Smile Check backend
+   This server serves the website and saves quiz results locally.
+   ========================================================== */
+
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
+const crypto = require("crypto");
 
 const PORT = process.env.PORT || 3000;
-const HOST = "127.0.0.1";
+const HOST = process.env.HOST || "0.0.0.0";
 const ROOT = __dirname;
 const DATA_DIR = path.join(ROOT, "data");
-const MESSAGE_FILE = path.join(DATA_DIR, "messages.jsonl");
+const RESULTS_FILE = path.join(DATA_DIR, "results.json");
 
+// These content types help the browser understand each file.
 const contentTypes = {
   ".css": "text/css; charset=utf-8",
   ".html": "text/html; charset=utf-8",
@@ -21,30 +28,24 @@ function sendJson(response, statusCode, data) {
   response.end(JSON.stringify(data));
 }
 
-function serveFile(request, response) {
-  const requestPath = request.url === "/" ? "/index.html" : request.url;
-  const safePath = path.normalize(decodeURIComponent(requestPath)).replace(/^(\.\.[/\\])+/, "");
-  const filePath = path.join(ROOT, safePath);
+function ensureDataFile() {
+  fs.mkdirSync(DATA_DIR, { recursive: true });
 
-  if (!filePath.startsWith(ROOT)) {
-    response.writeHead(403);
-    response.end("Forbidden");
-    return;
+  if (!fs.existsSync(RESULTS_FILE)) {
+    fs.writeFileSync(RESULTS_FILE, "[]");
   }
+}
 
-  fs.readFile(filePath, (error, contents) => {
-    if (error) {
-      response.writeHead(404);
-      response.end("Not found");
-      return;
-    }
+function readResults() {
+  ensureDataFile();
+  const file = fs.readFileSync(RESULTS_FILE, "utf8");
+  const results = JSON.parse(file);
+  return Array.isArray(results) ? results : [];
+}
 
-    const ext = path.extname(filePath);
-    response.writeHead(200, {
-      "Content-Type": contentTypes[ext] || "application/octet-stream",
-    });
-    response.end(contents);
-  });
+function writeResults(results) {
+  ensureDataFile();
+  fs.writeFileSync(RESULTS_FILE, JSON.stringify(results, null, 2));
 }
 
 function readRequestBody(request) {
@@ -55,8 +56,8 @@ function readRequestBody(request) {
       body += chunk;
 
       if (body.length > 1_000_000) {
+        reject(new Error("Request is too large."));
         request.destroy();
-        reject(new Error("Request is too large"));
       }
     });
 
@@ -65,47 +66,122 @@ function readRequestBody(request) {
   });
 }
 
-async function saveMessage(request, response) {
+function normalizeResult(result) {
+  const score = Number(result.score);
+  const riskLevel = String(result.riskLevel || "").trim();
+  const badge = result.badge || {};
+  const recommendations = Array.isArray(result.recommendations) ? result.recommendations : [];
+
+  if (!Number.isInteger(score) || score < 0 || score > 100) {
+    throw new Error("Score must be a whole number from 0 to 100.");
+  }
+
+  if (!["Low Risk", "Moderate Risk", "High Risk"].includes(riskLevel)) {
+    throw new Error("Risk level is missing or invalid.");
+  }
+
+  if (!badge.name || !badge.icon) {
+    throw new Error("Badge name and icon are required.");
+  }
+
+  if (!recommendations.length) {
+    throw new Error("At least one recommendation is required.");
+  }
+
+  return {
+    id: crypto.randomUUID(),
+    score,
+    riskLevel,
+    badge: {
+      name: String(badge.name).trim(),
+      icon: String(badge.icon).trim(),
+      message: String(badge.message || "").trim(),
+    },
+    recommendations: recommendations.map((item) => String(item).trim()).filter(Boolean),
+    completedAt: new Date().toISOString(),
+  };
+}
+
+async function saveResult(request, response) {
   try {
     const body = await readRequestBody(request);
-    const message = JSON.parse(body);
+    const result = normalizeResult(JSON.parse(body));
+    const results = readResults();
 
-    const name = String(message.name || "").trim();
-    const email = String(message.email || "").trim();
-    const note = String(message.message || "").trim();
+    results.unshift(result);
+    writeResults(results.slice(0, 50));
 
-    if (!name || !email || !note) {
-      sendJson(response, 400, { error: "Please fill out every field." });
-      return;
-    }
-
-    fs.mkdirSync(DATA_DIR, { recursive: true });
-    fs.appendFileSync(
-      MESSAGE_FILE,
-      JSON.stringify({ name, email, message: note, createdAt: new Date().toISOString() }) + "\n"
-    );
-
-    sendJson(response, 200, { ok: true });
+    sendJson(response, 201, { result });
   } catch (error) {
-    sendJson(response, 500, { error: "Something went wrong. Please try again." });
+    sendJson(response, 400, { error: error.message || "Result could not be saved." });
   }
 }
 
-const server = http.createServer((request, response) => {
-  if (request.method === "POST" && request.url === "/api/contact") {
-    saveMessage(request, response);
+function getResults(response) {
+  try {
+    sendJson(response, 200, { results: readResults() });
+  } catch (error) {
+    sendJson(response, 500, { error: "Saved results could not be loaded." });
+  }
+}
+
+function serveFile(request, response) {
+  const requestPath = request.url === "/" ? "/index.html" : request.url.split("?")[0];
+  const decodedPath = decodeURIComponent(requestPath);
+  const safePath = path.normalize(decodedPath).replace(/^(\.\.[/\\])+/, "");
+  const filePath = path.join(ROOT, safePath);
+
+  if (!filePath.startsWith(ROOT)) {
+    response.writeHead(403);
+    response.end("Forbidden");
     return;
   }
 
-  if (request.method === "GET") {
+  fs.readFile(filePath, (error, contents) => {
+    if (error) {
+      response.writeHead(404, { "Content-Type": "text/plain; charset=utf-8" });
+      response.end("Not found");
+      return;
+    }
+
+    const ext = path.extname(filePath);
+    response.writeHead(200, {
+      "Content-Type": contentTypes[ext] || "application/octet-stream",
+    });
+
+    if (request.method === "HEAD") {
+      response.end();
+      return;
+    }
+
+    response.end(contents);
+  });
+}
+
+const server = http.createServer((request, response) => {
+  if (request.url === "/results" && request.method === "GET") {
+    getResults(response);
+    return;
+  }
+
+  if (request.url === "/results" && request.method === "POST") {
+    saveResult(request, response);
+    return;
+  }
+
+  if (request.method === "GET" || request.method === "HEAD") {
     serveFile(request, response);
     return;
   }
 
-  response.writeHead(405);
-  response.end("Method not allowed");
+  sendJson(response, 405, { error: "Method not allowed." });
+});
+
+server.on("error", (error) => {
+  console.error(`Server could not start: ${error.message}`);
+  process.exit(1);
 });
 
 server.listen(PORT, HOST, () => {
-  console.log(`smile 2032 is running at http://localhost:${PORT}`);
+  console.log(`20 to 32 Smile Check is running at http://localhost:${PORT}`);
 });

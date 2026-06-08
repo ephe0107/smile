@@ -1,13 +1,15 @@
-# smile 2032
+# 20 to 32 Smile Check
 
-A small personal website with a simple local backend.
+A polished full-stack educational oral health website for youth.
 
-## How to view it
+Users answer a 10-question Smile Check, receive a Smile Score out of 100, unlock a badge, get a risk level, see personalized recommendations, save their result, review previous results in a dashboard, try a dental myth quiz, and finish with a certificate screen.
 
-Run this once from the project folder:
+## How to Run It Locally
+
+From the project folder, run:
 
 ```bash
-node server.js
+HOST=127.0.0.1 node server.js
 ```
 
 Then open:
@@ -16,44 +18,54 @@ Then open:
 http://localhost:3000
 ```
 
-(When we set up the live version, you'll also get a public link anyone can visit.)
+You can also run:
 
-## The files
-
-- `index.html` - the content and structure of the page (the words, sections, buttons).
-- `styles.css` - how it looks (colors, fonts, spacing, layout).
-- `server.js` - the local backend. It serves the website and saves contact form messages.
-- `README.md` - this file.
-
-Look for `EDIT:` comments inside `index.html`. They point to the spots you'll most likely want to change.
-
-## Contact form messages
-
-When someone submits the contact form locally, messages are saved in:
-
-```text
-data/messages.jsonl
+```bash
+npm start
 ```
 
-That file is ignored by Git so private messages do not get uploaded to GitHub.
+if `npm` is available on your computer.
 
-## Working together (the everyday rhythm)
+## Files
 
-We use Git and GitHub so two people can work without overwriting each other. The normal loop:
+- `index.html` - the page structure and all website sections.
+- `style.css` - the design, colors, layout, responsiveness, and animations.
+- `script.js` - the quiz, scoring, badges, recommendations, dashboard, myth quiz, and frontend error handling.
+- `server.js` - the backend server and API endpoints.
+- `package.json` - project metadata and start scripts.
+- `README.md` - this guide.
 
-1. **Get the latest:** `git pull`
-2. **Start your own copy of the change:** `git checkout -b my-change` (a "branch")
-3. Make your edits, then save them: `git add -A` then `git commit -m "what I changed"`
-4. **Send it up:** `git push -u origin my-change`
-5. On GitHub, open a **Pull Request** so the other person can see and approve it.
-6. Merge it in. Done.
+## Backend API
 
-Don't worry about memorizing this. We'll go through it together the first few times.
+The backend uses local file storage and saves quiz history in:
 
-## Next steps
+```text
+data/results.json
+```
 
-- [ ] Put the project on GitHub
-- [ ] Add your partner as a collaborator
-- [ ] Deploy it so it has a real web address
-- [ ] Replace the placeholder words and emojis with the real thing
-- [ ] (Optional) connect a custom domain name
+That file is ignored by Git so local results do not get uploaded.
+
+Endpoints:
+
+- `POST /results` - saves a completed quiz result.
+- `GET /results` - returns previous quiz results.
+
+Saved fields:
+
+- `score`
+- `riskLevel`
+- `badge`
+- `recommendations`
+- `completedAt`
+
+## Deployment Note
+
+Because this version has a backend, it cannot be hosted by GitHub Pages alone. GitHub Pages can host static websites, but it cannot run `server.js`.
+
+Beginner-friendly full-stack hosting options include Render, Railway, Fly.io, or a similar Node.js hosting service.
+
+The server uses `process.env.PORT`, which is what most hosting services provide automatically.
+
+## Educational Note
+
+This project is for preventive oral health education only. It does not diagnose dental problems or replace advice from a dentist or other health professional.

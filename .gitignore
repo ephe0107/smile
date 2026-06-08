@@ -7,4 +7,6 @@
 
 # Logs
 *.log
-data/messages.jsonl
+
+# Local saved quiz results
+data/results.json
