@@ -13,6 +13,7 @@ const HOST = process.env.HOST || "0.0.0.0";
 const ROOT = __dirname;
 const DATA_DIR = path.join(ROOT, "data");
 const RESULTS_FILE = path.join(DATA_DIR, "results.json");
+const EXPLORER_ANALYTICS_FILE = path.join(DATA_DIR, "tooth-explorer-analytics.json");
 
 // These content types help the browser understand each file.
 const contentTypes = {
@@ -46,6 +47,26 @@ function readResults() {
 function writeResults(results) {
   ensureDataFile();
   fs.writeFileSync(RESULTS_FILE, JSON.stringify(results, null, 2));
+}
+
+function ensureJsonArrayFile(filePath) {
+  fs.mkdirSync(DATA_DIR, { recursive: true });
+
+  if (!fs.existsSync(filePath)) {
+    fs.writeFileSync(filePath, "[]");
+  }
+}
+
+function readJsonArray(filePath) {
+  ensureJsonArrayFile(filePath);
+  const file = fs.readFileSync(filePath, "utf8");
+  const items = JSON.parse(file);
+  return Array.isArray(items) ? items : [];
+}
+
+function writeJsonArray(filePath, items) {
+  ensureJsonArrayFile(filePath);
+  fs.writeFileSync(filePath, JSON.stringify(items, null, 2));
 }
 
 function readRequestBody(request) {
@@ -175,6 +196,41 @@ function getResults(response) {
   }
 }
 
+async function saveExplorerAnalytics(request, response) {
+  try {
+    const body = await readRequestBody(request);
+    const event = JSON.parse(body);
+    const type = String(event.type || "").trim();
+    const age = Number(event.age);
+
+    if (!["age_lookup", "tooth_interaction"].includes(type)) {
+      throw new Error("Explorer event type is invalid.");
+    }
+
+    if (!Number.isInteger(age) || age < 5 || age > 18) {
+      throw new Error("Age must be a whole number from 5 to 18.");
+    }
+
+    const analytics = readJsonArray(EXPLORER_ANALYTICS_FILE);
+    const savedEvent = {
+      id: crypto.randomUUID(),
+      type,
+      age,
+      toothId: event.toothId ? String(event.toothId).trim() : null,
+      toothName: event.toothName ? String(event.toothName).trim() : null,
+      status: event.status ? String(event.status).trim() : null,
+      createdAt: new Date().toISOString(),
+    };
+
+    analytics.unshift(savedEvent);
+    writeJsonArray(EXPLORER_ANALYTICS_FILE, analytics.slice(0, 500));
+
+    sendJson(response, 201, { event: savedEvent });
+  } catch (error) {
+    sendJson(response, 400, { error: error.message || "Explorer analytics could not be saved." });
+  }
+}
+
 function serveFile(request, response) {
   const requestPath = request.url === "/" ? "/index.html" : request.url.split("?")[0];
   const decodedPath = decodeURIComponent(requestPath);
@@ -216,6 +272,11 @@ const server = http.createServer((request, response) => {
 
   if (request.url === "/results" && request.method === "POST") {
     saveResult(request, response);
+    return;
+  }
+
+  if (request.url === "/explorer-analytics" && request.method === "POST") {
+    saveExplorerAnalytics(request, response);
     return;
   }
 

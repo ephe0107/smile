@@ -5,6 +5,7 @@
   "description": "A full-stack educational oral health quiz website for youth.",
   "scripts": {
     "start": "node server.js",
-    "dev": "node server.js"
+    "dev": "node server.js",
+    "seed": "node scripts/seed-demo-data.js"
   }
 }

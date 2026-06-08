@@ -12,7 +12,7 @@
   <!-- Google Font: this loads automatically when the page opens online. -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 
   <!-- The visual design lives in style.css. -->
   <link rel="stylesheet" href="style.css" />
@@ -22,13 +22,20 @@
   <!-- Header stays at the top so users can jump around the page. -->
   <header class="site-header">
     <a class="brand" href="#home" aria-label="20 to 32 Smile Check home">
-      <span class="brand-icon">🦷</span>
+      <span class="brand-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" role="img">
+          <path d="M8.8 3.4c1.3 0 2 .7 3.2.7s1.9-.7 3.2-.7c2.6 0 4.4 2.1 4.4 5.1 0 2.3-.9 4.3-1.8 6.3-.9 2.1-1.8 4.3-3.1 4.3-.9 0-1-1.3-1.3-2.7-.3-1.4-.6-2.7-1.4-2.7s-1.1 1.3-1.4 2.7c-.3 1.4-.4 2.7-1.3 2.7-1.3 0-2.2-2.2-3.1-4.3-.9-2-1.8-4-1.8-6.3 0-3 1.8-5.1 4.4-5.1Z" />
+        </svg>
+      </span>
       <span>20 to 32 Smile Check</span>
     </a>
 
     <nav class="nav-links" aria-label="Main navigation">
       <a href="#quiz" data-screen-link="quiz">Quiz</a>
+      <a href="#explorer" data-screen-link="explorer">Teeth</a>
       <a href="#dashboard" data-screen-link="dashboard">History</a>
+      <a href="#admin" data-screen-link="admin">Analytics</a>
+      <a href="#impact" data-screen-link="impact">Impact</a>
       <a href="#myths" data-screen-link="myths">Myths</a>
       <a href="#about">About</a>
     </nav>
@@ -38,12 +45,13 @@
     <!-- 1. Landing page section -->
     <section class="hero section-screen active-screen" id="home">
       <div class="hero-copy">
-        <p class="eyebrow">Youth oral health challenge</p>
+        <p class="eyebrow">Preventive oral health platform</p>
         <h1>20 to 32 Smile Check</h1>
         <p class="subtitle">Learn how your daily habits affect your smile.</p>
         <p class="hero-text">
-          Take a quick quiz, get your personalized Smile Score, unlock a badge,
-          and learn simple ways to protect your teeth and gums.
+          A guided education platform for youth, parents, and dental teams. Complete
+          a short assessment, review personalized prevention insights, and track
+          oral health learning over time.
         </p>
 
         <div class="hero-actions">
@@ -52,22 +60,28 @@
         </div>
       </div>
 
-      <div class="hero-card" aria-label="Smile score preview">
-        <div class="floating-icon icon-one">🪥</div>
-        <div class="floating-icon icon-two">✨</div>
-        <div class="score-preview">
-          <span class="score-label">Smile Score</span>
-          <strong>?</strong>
-          <span>Complete the quiz to reveal yours</span>
+      <div class="hero-card" aria-label="Oral health platform preview">
+        <div class="clinical-illustration" aria-hidden="true">
+          <svg viewBox="0 0 420 300">
+            <rect x="36" y="46" width="348" height="214" rx="32" class="screen-shape" />
+            <rect x="68" y="78" width="152" height="18" rx="9" class="line-shape primary-line" />
+            <rect x="68" y="112" width="238" height="12" rx="6" class="line-shape" />
+            <rect x="68" y="138" width="180" height="12" rx="6" class="line-shape" />
+            <circle cx="306" cy="112" r="42" class="chart-ring" />
+            <path d="M301 76c20 0 37 15 40 34" class="chart-arc" />
+            <path d="M175 175c9-28 27-47 51-47s42 19 51 47c10 33-8 67-28 67-13 0-12-28-23-28s-10 28-23 28c-20 0-38-34-28-67Z" class="tooth-shape" />
+            <path d="M126 210h-36c-12 0-22-10-22-22s10-22 22-22h46" class="care-line" />
+            <path d="M292 210h38c12 0 22-10 22-22s-10-22-22-22h-44" class="care-line" />
+          </svg>
         </div>
         <div class="mini-stat-grid">
           <div>
             <strong>10</strong>
-            <span>habit questions</span>
+            <span>habit indicators</span>
           </div>
           <div>
-            <strong>5</strong>
-            <span>dental myths</span>
+            <strong>Live</strong>
+            <span>impact dashboard</span>
           </div>
         </div>
       </div>
@@ -182,7 +196,79 @@
       </div>
     </section>
 
-    <!-- 4. Dashboard / History section -->
+    <!-- 4. Tooth development explorer section -->
+    <section class="explorer section-screen" id="explorer">
+      <div class="section-heading">
+        <p class="eyebrow">Development explorer</p>
+        <h2>Tooth Development Explorer</h2>
+        <p>Select an age from 5 to 18 to explore expected teeth, erupting teeth, and teeth typically lost at that stage.</p>
+      </div>
+
+      <div class="explorer-panel">
+        <div class="age-control-card">
+          <label for="ageSlider">
+            Select age
+            <strong><span id="selectedAge">8</span> years old</strong>
+          </label>
+          <input id="ageSlider" type="range" min="5" max="18" value="8" />
+          <div class="age-ticks" aria-hidden="true">
+            <span>5</span>
+            <span>8</span>
+            <span>12</span>
+            <span>15</span>
+            <span>18</span>
+          </div>
+        </div>
+
+        <div class="explorer-grid">
+          <article class="development-card">
+            <span class="result-label">Expected to be present</span>
+            <strong id="presentCount">-</strong>
+            <div class="mini-tooth-diagram" id="presentDiagram" aria-label="Visual list of expected teeth"></div>
+            <p id="presentText">Select an age to view expected teeth.</p>
+          </article>
+          <article class="development-card">
+            <span class="result-label">Likely erupting</span>
+            <strong id="eruptingCount">-</strong>
+            <div class="mini-tooth-diagram" id="eruptingDiagram" aria-label="Visual list of erupting teeth"></div>
+            <p id="eruptingText">Erupting teeth will appear here.</p>
+          </article>
+          <article class="development-card">
+            <span class="result-label">Typically lost</span>
+            <strong id="lostCount">-</strong>
+            <div class="mini-tooth-diagram" id="lostDiagram" aria-label="Visual list of typically lost teeth"></div>
+            <p id="lostText">Primary teeth commonly lost at this age will appear here.</p>
+          </article>
+        </div>
+
+        <div class="dental-chart-card">
+          <div class="chart-heading">
+            <h3>Interactive dental chart</h3>
+            <p>Hover, tap, or focus a tooth to learn what is happening at the selected age.</p>
+          </div>
+          <div class="tooth-legend" aria-label="Tooth status legend">
+            <span><i class="legend-dot present"></i> Present</span>
+            <span><i class="legend-dot erupting"></i> Erupting</span>
+            <span><i class="legend-dot lost"></i> Typically lost</span>
+            <span><i class="legend-dot later"></i> Later/not expected</span>
+          </div>
+          <div class="dental-chart" id="dentalChart" aria-label="Interactive tooth development chart"></div>
+          <div class="tooth-info" id="toothInfo" role="status">
+            Select a tooth to see development details.
+          </div>
+        </div>
+
+        <article class="fact-card">
+          <span class="result-label">Educational fact</span>
+          <h3 id="ageFactTitle">Mixed dentition</h3>
+          <p id="ageFact">Children often have a mix of primary and permanent teeth during the school-age years.</p>
+        </article>
+
+        <p class="save-status" id="explorerStatus" role="status"></p>
+      </div>
+    </section>
+
+    <!-- 5. Dashboard / History section -->
     <section class="dashboard section-screen" id="dashboard">
       <div class="section-heading">
         <p class="eyebrow">Saved progress</p>
@@ -207,7 +293,125 @@
       </div>
     </section>
 
-    <!-- 5. Mini myth quiz section -->
+    <!-- 6. Admin analytics section -->
+    <section class="admin section-screen" id="admin">
+      <div class="section-heading">
+        <p class="eyebrow">Public health dashboard</p>
+        <h2>Education Impact Analytics</h2>
+        <p>
+          Use saved quiz results to identify oral health education gaps across youth participants.
+        </p>
+      </div>
+
+      <div class="admin-panel">
+        <div class="dashboard-topline">
+          <div>
+            <span class="result-label">Population snapshot</span>
+            <p id="analyticsStatus">Loading analytics from saved results...</p>
+          </div>
+          <button class="btn btn-soft" id="refreshAnalyticsBtn" type="button">Refresh Analytics</button>
+        </div>
+
+        <div class="metric-grid" id="metricGrid"></div>
+
+        <div class="analytics-grid">
+          <article class="analytics-card">
+            <div class="chart-heading">
+              <h3>Score distribution</h3>
+              <p>Shows where scores cluster across completed quizzes.</p>
+            </div>
+            <div class="bar-chart" id="scoreDistributionChart"></div>
+          </article>
+
+          <article class="analytics-card">
+            <div class="chart-heading">
+              <h3>Risk distribution</h3>
+              <p>Shows the percentage of youth in each risk group.</p>
+            </div>
+            <div class="risk-chart" id="riskDistributionChart"></div>
+          </article>
+
+          <article class="analytics-card wide">
+            <div class="chart-heading">
+              <h3>Most common oral health issues</h3>
+              <p>Highlights the weakest education areas based on category scores.</p>
+            </div>
+            <div class="issue-chart" id="issueChart"></div>
+          </article>
+        </div>
+
+        <article class="impact-card">
+          <span class="result-label">Interpretation</span>
+          <h3 id="impactHeadline">Waiting for saved results</h3>
+          <p id="impactSummary">
+            Complete quizzes to generate public-health-style insights.
+          </p>
+        </article>
+      </div>
+    </section>
+
+    <!-- 7. Project impact section -->
+    <section class="impact-page section-screen" id="impact">
+      <div class="impact-hero">
+        <p class="eyebrow">Project impact</p>
+        <h2>Advancing youth oral health literacy through interactive prevention education</h2>
+        <p>
+          20 to 32 Smile Check connects preventive dentistry, education, and data-informed outreach
+          in a format that can support children, parents, schools, and dental professionals.
+        </p>
+      </div>
+
+      <div class="impact-two-column">
+        <article class="impact-section-card">
+          <span class="result-label">Problem</span>
+          <h3>Preventable oral disease remains common</h3>
+          <p>Childhood oral disease remains one of the most common preventable health conditions.</p>
+        </article>
+
+        <article class="impact-section-card">
+          <span class="result-label">Goal</span>
+          <h3>Build oral health literacy early</h3>
+          <p>Improve youth oral health literacy through interactive education that makes prevention understandable, measurable, and actionable.</p>
+        </article>
+      </div>
+
+      <article class="impact-section-card">
+        <span class="result-label">Platform features</span>
+        <h3>Educational tools built into the platform</h3>
+        <div class="feature-showcase">
+          <div><strong>Smile Score Assessment</strong><p>Turns daily habits into a clear prevention score.</p></div>
+          <div><strong>Personalized Recommendations</strong><p>Explains specific behavior changes based on quiz responses.</p></div>
+          <div><strong>Myth Quiz</strong><p>Corrects common misconceptions with instant feedback.</p></div>
+          <div><strong>Progress Tracking</strong><p>Shows improvement or decline across completed quizzes.</p></div>
+          <div><strong>Educational Resources</strong><p>Includes development guidance, reports, facts, and dashboards.</p></div>
+        </div>
+      </article>
+
+      <article class="impact-section-card">
+        <div class="dashboard-topline">
+          <div>
+            <span class="result-label">Live impact metrics</span>
+            <h3>Backend-powered education indicators</h3>
+            <p id="impactMetricsStatus">Loading live impact metrics...</p>
+          </div>
+          <button class="btn btn-soft" id="refreshImpactBtn" type="button">Refresh Metrics</button>
+        </div>
+        <div class="impact-metrics-grid" id="impactMetricsGrid"></div>
+      </article>
+
+      <article class="impact-section-card">
+        <span class="result-label">Future expansion</span>
+        <h3>Pathways for broader preventive care impact</h3>
+        <div class="expansion-timeline">
+          <div><strong>School outreach programs</strong><p>Use classroom-friendly activities and aggregate learning gaps.</p></div>
+          <div><strong>Community dental clinics</strong><p>Support chairside education before or after preventive visits.</p></div>
+          <div><strong>Parent education modules</strong><p>Help families reinforce brushing, diet, fluoride, and checkup routines.</p></div>
+          <div><strong>Preventive care initiatives</strong><p>Use analytics to guide targeted oral health promotion campaigns.</p></div>
+        </div>
+      </article>
+    </section>
+
+    <!-- 8. Mini myth quiz section -->
     <section class="myths section-screen" id="myths">
       <div class="section-heading">
         <p class="eyebrow">Step 3</p>
@@ -222,7 +426,7 @@
       </div>
     </section>
 
-    <!-- 6. Final certificate screen -->
+    <!-- 9. Final certificate screen -->
     <section class="certificate section-screen" id="certificate">
       <div class="certificate-card">
         <p class="eyebrow">Completed</p>
