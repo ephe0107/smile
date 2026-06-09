@@ -96,7 +96,7 @@ function normalizeResult(result) {
   const achievements = Array.isArray(result.achievements) ? result.achievements : [];
   const report = Array.isArray(result.report) ? result.report : [];
   const categoryScores = result.categoryScores || {};
-  const educationScores = result.educationScores || {};
+  const educationScores = result.educationScores || result.curriculumScores || {};
   const strongestHabit = result.strongestHabit || {};
   const weakestHabit = result.weakestHabit || {};
 
@@ -183,7 +183,7 @@ async function saveResult(request, response) {
     const result = addProgressTrend(normalizedResult, results[0]);
 
     results.unshift(result);
-    writeResults(results.slice(0, 50));
+    writeResults(results.slice(0, 300));
 
     sendJson(response, 201, { result });
   } catch (error) {

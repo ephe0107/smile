@@ -787,6 +787,15 @@ function renderClinicalCards() {
   });
 }
 
+function escapeHtml(value) {
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 function evidenceForText(text) {
   const lower = text.toLowerCase();
   if (lower.includes("floss") || lower.includes("between teeth") || lower.includes("clean between")) return evidenceLibrary.flossing;
@@ -799,21 +808,21 @@ function evidenceForText(text) {
 
 function renderEvidenceComponent(evidence, detail, section = "recommendations") {
   return `
-    <button class="science-toggle" type="button" data-evidence-detail="${detail}" data-evidence-section="${section}">
+    <button class="science-toggle" type="button" data-evidence-detail="${escapeHtml(detail)}" data-evidence-section="${escapeHtml(section)}">
       View evidence
     </button>
     <div class="science-popup">
       <div>
         <span>Why this matters</span>
-        <p>${evidence.why}</p>
+        <p>${escapeHtml(evidence.why)}</p>
       </div>
       <div>
         <span>Supporting scientific rationale</span>
-        <p>${evidence.rationale}</p>
+        <p>${escapeHtml(evidence.rationale)}</p>
       </div>
       <div>
         <span>Oral health outcome being prevented</span>
-        <p>${evidence.prevents}</p>
+        <p>${escapeHtml(evidence.prevents)}</p>
       </div>
     </div>
   `;
@@ -822,7 +831,8 @@ function renderEvidenceComponent(evidence, detail, section = "recommendations") 
 function connectEvidenceToggle(container) {
   container.querySelectorAll(".science-toggle").forEach((button) => {
     button.addEventListener("click", () => {
-      const item = button.closest(".evidence-recommendation, .prevention-evidence-item");
+      const item = button.closest(".evidence-recommendation, .prevention-evidence-item, .resource-card");
+      if (!item) return;
       item.classList.toggle("open");
       button.textContent = item.classList.contains("open") ? "Hide evidence" : "View evidence";
       trackEngagement({
@@ -834,25 +844,15 @@ function connectEvidenceToggle(container) {
   });
 }
 
-function scienceForRecommendation(recommendation) {
-  const lower = recommendation.toLowerCase();
-  if (lower.includes("floss")) return evidenceLibrary.flossing;
-  if (lower.includes("sugar") || lower.includes("snack") || lower.includes("water")) return evidenceLibrary.diet;
-  if (lower.includes("fluoride")) return evidenceLibrary.fluoride;
-  if (lower.includes("checkup") || lower.includes("gum") || lower.includes("bleeding")) return evidenceLibrary.care;
-  if (lower.includes("mouthguard") || lower.includes("sport")) return evidenceLibrary.sports;
-  return evidenceLibrary.brushing;
-}
-
 function renderEvidenceRecommendations(recommendations) {
   recommendationList.innerHTML = "";
 
   recommendations.forEach((recommendation) => {
-    const evidence = scienceForRecommendation(recommendation);
+    const evidence = evidenceForText(recommendation);
     const item = document.createElement("li");
     item.className = "evidence-recommendation";
     item.innerHTML = `
-      <strong>${recommendation}</strong>
+      <strong>${escapeHtml(recommendation)}</strong>
       ${renderEvidenceComponent(evidence, recommendation, "recommendations")}
     `;
     recommendationList.appendChild(item);
@@ -892,7 +892,7 @@ function renderPreventionPlan(result) {
     const item = document.createElement("li");
     item.className = "prevention-evidence-item";
     item.innerHTML = `
-      <strong>${goal}</strong>
+      <strong>${escapeHtml(goal)}</strong>
       ${renderEvidenceComponent(evidenceForText(goal), goal, "prevention_plan")}
     `;
     weeklyGoals.appendChild(item);
@@ -1245,8 +1245,8 @@ function renderAgeGuidance(age) {
     const card = document.createElement("div");
     card.className = title === "Prevention recommendations" ? "prevention-evidence-item" : "";
     card.innerHTML = `
-      <strong>${title}</strong>
-      <p>${text}</p>
+      <strong>${escapeHtml(title)}</strong>
+      <p>${escapeHtml(text)}</p>
       ${title === "Prevention recommendations" ? renderEvidenceComponent(evidenceForText(text), text, "tooth_explorer") : ""}
     `;
     ageGuidanceGrid.appendChild(card);
@@ -1346,8 +1346,8 @@ function renderCaregiverResources() {
     const card = document.createElement("article");
     card.className = "resource-card";
     card.innerHTML = `
-      <strong>${title}</strong>
-      <p>${text}</p>
+      <strong>${escapeHtml(title)}</strong>
+      <p>${escapeHtml(text)}</p>
       ${renderEvidenceComponent(evidenceForText(`${title}: ${text}`), title, "caregiver_resources")}
     `;
     caregiverResources.appendChild(card);

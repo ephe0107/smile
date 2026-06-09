@@ -858,7 +858,8 @@ button:disabled {
 }
 
 .evidence-recommendation.open .science-popup,
-.prevention-evidence-item.open .science-popup {
+.prevention-evidence-item.open .science-popup,
+.resource-card.open .science-popup {
   display: grid;
 }
 
