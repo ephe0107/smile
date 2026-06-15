@@ -460,7 +460,17 @@ const certificateBtn = document.querySelector("#certificateBtn");
 const certificateBadge = document.querySelector("#certificateBadge");
 const certificateBadgeName = document.querySelector("#certificateBadgeName");
 const certificateScore = document.querySelector("#certificateScore");
+const certificateName = document.querySelector("#certificateName");
+const certificateNote = document.querySelector("#certificateNote");
+const certificateDate = document.querySelector("#certificateDate");
+const certificateNameInput = document.querySelector("#certificateNameInput");
+const downloadCertBtn = document.querySelector("#downloadCertBtn");
+const shareCertBtn = document.querySelector("#shareCertBtn");
+const certStatus = document.querySelector("#certStatus");
+const certCanvas = document.querySelector("#certCanvas");
 const restartBtn = document.querySelector("#restartBtn");
+
+const DISPLAY_FONT = '"Baloo 2", "Inter", sans-serif';
 
 function showScreen(screenId) {
   screens.forEach((screen) => {
@@ -522,9 +532,14 @@ function renderQuestion() {
   nextQuestionBtn.textContent = currentQuestionIndex === quizQuestions.length - 1 ? "See Results" : "Next";
 }
 
+function quizCompleted() {
+  return selectedAnswers.every((answer) => answer !== null);
+}
+
 function calculateScore() {
   const total = quizQuestions.reduce((sum, question, index) => {
-    return sum + selectedAnswerFor(index).score;
+    const answer = selectedAnswerFor(index);
+    return sum + (answer ? answer.score : 0);
   }, 0);
 
   return Math.round(total);
@@ -1027,6 +1042,42 @@ function formatTrend(change) {
   return { text: "0", className: "flat" };
 }
 
+function scoreTier(score) {
+  if (score >= 100) return { key: "perfect", label: "Perfect" };
+  if (score >= 90) return { key: "excellent", label: "Excellent" };
+  if (score >= 75) return { key: "great", label: "Great" };
+  if (score >= 60) return { key: "fair", label: "Building" };
+  return { key: "low", label: "Needs care" };
+}
+
+// Inline SVG line of scores over time — a lightweight "graph" for the summary.
+function sparklineSvg(scores) {
+  if (scores.length < 2) return "";
+  const w = 240;
+  const h = 50;
+  const pad = 5;
+  const step = (w - pad * 2) / (scores.length - 1);
+  const pts = scores.map((s, i) => [
+    pad + i * step,
+    h - pad - (Math.max(0, Math.min(100, s)) / 100) * (h - pad * 2),
+  ]);
+  const line = pts.map((p, i) => `${i ? "L" : "M"}${p[0].toFixed(1)} ${p[1].toFixed(1)}`).join(" ");
+  const area = `${line} L${pts[pts.length - 1][0].toFixed(1)} ${h - pad} L${pad} ${h - pad} Z`;
+  const last = pts[pts.length - 1];
+  return `
+    <svg class="history-spark" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-hidden="true">
+      <defs>
+        <linearGradient id="sparkFill" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="rgba(0,112,253,0.22)" />
+          <stop offset="1" stop-color="rgba(0,209,203,0)" />
+        </linearGradient>
+      </defs>
+      <path d="${area}" fill="url(#sparkFill)" />
+      <path d="${line}" fill="none" stroke="#0070fd" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+      <circle cx="${last[0].toFixed(1)}" cy="${last[1].toFixed(1)}" r="3.6" fill="#0070fd" />
+    </svg>`;
+}
+
 function renderHistory(results) {
   historyList.innerHTML = "";
 
@@ -1043,9 +1094,30 @@ function renderHistory(results) {
   const demoCount = results.filter((result) => result.isDemo).length;
   historyStatus.textContent = `${results.length} saved result${results.length === 1 ? "" : "s"}${demoCount ? ` • ${demoCount} seeded demo` : ""}`;
 
+  // Summary header: best / average / count + a scores-over-time sparkline.
+  const byTime = [...results].sort((a, b) => new Date(a.completedAt) - new Date(b.completedAt));
+  const scores = byTime.map((result) => Number(result.score));
+  const best = Math.max(...scores);
+  const average = Math.round(scores.reduce((sum, value) => sum + value, 0) / scores.length);
+
+  const summary = document.createElement("div");
+  summary.className = "history-summary";
+  summary.innerHTML = `
+    <div class="hs-stats">
+      <div class="hs-stat"><span>Best</span><strong>${best}<i>/100</i></strong></div>
+      <div class="hs-stat"><span>Average</span><strong>${average}<i>/100</i></strong></div>
+      <div class="hs-stat"><span>Check-ins</span><strong>${results.length}</strong></div>
+    </div>
+    <div class="hs-spark">
+      <span class="hs-spark-label">Your scores over time</span>
+      ${sparklineSvg(scores)}
+    </div>
+  `;
+  historyList.appendChild(summary);
+
   results.forEach((result) => {
-    const card = document.createElement("article");
-    card.className = "history-card";
+    const score = Number(result.score);
+    const tier = scoreTier(score);
     const date = new Date(result.completedAt).toLocaleDateString(undefined, {
       month: "short",
       day: "numeric",
@@ -1054,13 +1126,18 @@ function renderHistory(results) {
     const unlockedCount = (result.achievements || []).filter((achievement) => achievement.unlocked).length;
     const trend = formatTrend(result.trend ? result.trend.change : 0);
 
+    const card = document.createElement("article");
+    card.className = `history-card tier-${tier.key}`;
+    const perfectTag = tier.key === "perfect" ? `<span class="perfect-tag">★ Perfect score</span>` : "";
+
     card.innerHTML = `
-      <div class="history-badge">${result.badge.icon}</div>
-      <div>
-        <h3>${result.badge.name}</h3>
-        <p>${result.riskLevel} • ${unlockedCount} achievements • ${date}${result.isDemo ? " • Demo data" : ""}</p>
+      <div class="history-ring" style="--pct: ${score}">
+        <span>${score}</span>
       </div>
-      <div class="history-score">${result.score}/100</div>
+      <div class="history-main">
+        <h3>${escapeHtml(result.badge.name)}${perfectTag}</h3>
+        <p class="history-meta">${date} · ${escapeHtml(result.riskLevel)} · ${unlockedCount} badge${unlockedCount === 1 ? "" : "s"}${result.isDemo ? " · Demo" : ""}</p>
+      </div>
       <div class="history-trend ${trend.className}">${trend.text}</div>
     `;
 
@@ -1429,7 +1506,7 @@ function renderMetricCards(metrics) {
     card.className = "metric-card";
     card.innerHTML = `
       <span>${metric.label}</span>
-      <strong>${metric.value}</strong>
+      <strong>${metric.value}${metric.unit ? `<i>${metric.unit}</i>` : ""}</strong>
       <p>${metric.note}</p>
     `;
 
@@ -1458,21 +1535,66 @@ function renderHorizontalChart(container, counts, total) {
   });
 }
 
-function renderRiskChart(counts, total) {
-  riskDistributionChart.innerHTML = "";
+function renderRiskDonut(counts, total) {
+  const segments = [
+    { label: "Low Risk", value: counts["Low Risk"] || 0, color: "#0e9f6e" },
+    { label: "Moderate Risk", value: counts["Moderate Risk"] || 0, color: "#eab83a" },
+    { label: "High Risk", value: counts["High Risk"] || 0, color: "#e5547d" },
+  ];
 
-  ["Low Risk", "Moderate Risk", "High Risk"].forEach((risk) => {
-    const value = percent(counts[risk] || 0, total);
-    const card = document.createElement("div");
-    card.className = `risk-slice ${risk.toLowerCase().replace(" ", "-")}`;
-    card.innerHTML = `
-      <span>${risk}</span>
-      <strong>${value}%</strong>
-      <p>${counts[risk] || 0} result${counts[risk] === 1 ? "" : "s"}</p>
-    `;
-
-    riskDistributionChart.appendChild(card);
+  let acc = 0;
+  const stops = segments.map((segment) => {
+    const start = (acc / total) * 100;
+    acc += segment.value;
+    const end = (acc / total) * 100;
+    return `${segment.color} ${start.toFixed(2)}% ${end.toFixed(2)}%`;
   });
+
+  const legend = segments
+    .map(
+      (segment) => `
+        <li>
+          <i style="background: ${segment.color}"></i>
+          <span>${segment.label}</span>
+          <strong>${percent(segment.value, total)}%</strong>
+        </li>`
+    )
+    .join("");
+
+  riskDistributionChart.innerHTML = `
+    <div class="donut-wrap">
+      <div class="risk-donut" style="background: conic-gradient(${stops.join(", ")})" role="img" aria-label="Risk distribution donut chart">
+        <div class="risk-donut-center"><strong>${total}</strong><span>quizzes</span></div>
+      </div>
+      <ul class="donut-legend">${legend}</ul>
+    </div>
+  `;
+}
+
+// Vertical column chart for score buckets.
+function renderColumnChart(container, counts, total) {
+  const entries = Object.entries(counts);
+  const max = Math.max(1, ...entries.map(([, count]) => count));
+
+  container.innerHTML = `
+    <div class="column-chart">
+      ${entries
+        .map(([label, count]) => {
+          const heightPct = Math.round((count / max) * 100);
+          const share = percent(count, total);
+          return `
+            <div class="col" title="${count} result${count === 1 ? "" : "s"} (${share}%)">
+              <div class="col-bar-wrap">
+                <div class="col-bar" style="height: ${heightPct}%">
+                  <span class="col-count">${count}</span>
+                </div>
+              </div>
+              <span class="col-label">${label}</span>
+            </div>`;
+        })
+        .join("")}
+    </div>
+  `;
 }
 
 function getEngagementSummary(engagement = []) {
@@ -1530,21 +1652,16 @@ function renderAnalytics(results, engagement = []) {
   analyticsStatus.textContent =
     `${total} completed quiz${total === 1 ? "" : "zes"} analyzed${demoCount ? ` • ${demoCount} seeded demo records` : ""}` +
     `${engagementSummary.totalEvents ? ` • ${engagementSummary.totalEvents} education engagement events` : ""}`;
+  // A few headline KPIs only — the distributions live in the charts below.
   renderMetricCards([
-    { label: "Total quizzes completed", value: total, note: "Saved completions in backend" },
-    { label: "Average Smile Score", value: `${averageScore}/100`, note: "Overall education outcome" },
-    { label: "Low Risk", value: `${percent(riskCounts["Low Risk"] || 0, total)}%`, note: "Participants with stronger prevention habits" },
-    { label: "Moderate Risk", value: `${percent(riskCounts["Moderate Risk"] || 0, total)}%`, note: "Participants who may benefit from targeted support" },
-    { label: "High Risk", value: `${percent(riskCounts["High Risk"] || 0, total)}%`, note: "Participants needing priority education" },
-    { label: "Most common weakness", value: commonWeakness.label, note: `${commonWeakness.count} result${commonWeakness.count === 1 ? "" : "s"}` },
-    { label: "Most common recommendation", value: commonRecommendation.label, note: `${commonRecommendation.count} time${commonRecommendation.count === 1 ? "" : "s"} recommended` },
-    { label: "Education engagement", value: engagementSummary.totalEvents, note: "Anonymous module interactions saved" },
-    { label: "Prevention checklist actions", value: engagementSummary.preventionActions, note: "Daily habit-building interactions" },
-    { label: "Myth quiz accuracy", value: engagementSummary.mythCorrectRate, note: "Learning check performance" },
+    { label: "Quizzes completed", value: total, note: "Saved Smile Checks" },
+    { label: "Average Smile Score", value: `${averageScore}`, unit: "/100", note: "Across all results" },
+    { label: "Education engagement", value: engagementSummary.totalEvents, note: "Learning interactions" },
+    { label: "Myth quiz accuracy", value: engagementSummary.mythCorrectRate, note: "Learning-check performance" },
   ]);
 
-  renderHorizontalChart(scoreDistributionChart, getScoreDistribution(results), total);
-  renderRiskChart(riskCounts, total);
+  renderColumnChart(scoreDistributionChart, getScoreDistribution(results), total);
+  renderRiskDonut(riskCounts, total);
   renderHorizontalChart(issueChart, weaknessCounts, total);
 
   impactHeadline.textContent = `${commonWeakness.label} is the clearest education gap`;
@@ -1684,14 +1801,273 @@ function renderMyths() {
   });
 }
 
+function certName() {
+  const value = (certificateNameInput.value || "").trim();
+  return value || "Future Smile Champion";
+}
+
+function certDateLabel() {
+  return new Date().toLocaleDateString(undefined, {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+}
+
+function certFileName() {
+  const slug = certName().replace(/[^a-z0-9]+/gi, "-").replace(/^-+|-+$/g, "").toLowerCase();
+  return `smile-certificate-${slug || "result"}.png`;
+}
+
+// Keep the on-screen card text in sync. textContent (not innerHTML) keeps the
+// user-entered name safe from injection.
+function updateCertificateText() {
+  certificateBadge.textContent = finalResult.badge.icon;
+  certificateBadgeName.textContent = finalResult.badge.name;
+  certificateScore.textContent = finalResult.score;
+  certificateName.textContent = certName();
+  certificateDate.textContent = certDateLabel();
+
+  const weak = finalResult.weakestHabit && finalResult.weakestHabit.topic;
+  certificateNote.textContent = weak
+    ? `Your next win: keep working on ${weak}. Small daily habits protect your smile.`
+    : "Keep building small daily habits — brushing, flossing, water, and checkups all protect your smile.";
+}
+
+function roundRectPath(ctx, x, y, w, h, r) {
+  if (typeof ctx.roundRect === "function") {
+    ctx.beginPath();
+    ctx.roundRect(x, y, w, h, r);
+    return;
+  }
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+// Draw the "20 to 32" wordmark with a smile-arrow underline, centered on cx.
+function drawWordmark(ctx, cx, y) {
+  ctx.save();
+  ctx.textBaseline = "alphabetic";
+  ctx.font = `800 52px ${DISPLAY_FONT}`;
+  const big = ctx.measureText("20").width;
+  ctx.font = `700 28px ${DISPLAY_FONT}`;
+  const mid = ctx.measureText(" to ").width;
+  ctx.font = `800 52px ${DISPLAY_FONT}`;
+  const big2 = ctx.measureText("32").width;
+  const total = big + mid + big2;
+  let x = cx - total / 2;
+
+  ctx.textAlign = "left";
+  ctx.font = `800 52px ${DISPLAY_FONT}`;
+  ctx.fillStyle = "#0070fd";
+  ctx.fillText("20", x, y);
+  x += big;
+  ctx.font = `700 28px ${DISPLAY_FONT}`;
+  ctx.fillStyle = "#19b6c2";
+  ctx.fillText(" to ", x, y - 4);
+  x += mid;
+  ctx.font = `800 52px ${DISPLAY_FONT}`;
+  ctx.fillStyle = "#00d1cb";
+  ctx.fillText("32", x, y);
+
+  // Smile-arrow under the wordmark.
+  ctx.strokeStyle = "#14a6e0";
+  ctx.lineWidth = 5;
+  ctx.lineCap = "round";
+  ctx.beginPath();
+  ctx.arc(cx, y - 6, total / 2.05, 0.18 * Math.PI, 0.82 * Math.PI);
+  ctx.stroke();
+  ctx.restore();
+}
+
+// Render the downloadable/shareable PNG onto the off-screen canvas.
+function drawCertificateCanvas() {
+  if (!certCanvas || !finalResult) {
+    return;
+  }
+  const ctx = certCanvas.getContext("2d");
+  const W = certCanvas.width;
+  const H = certCanvas.height;
+
+  const bg = ctx.createLinearGradient(0, 0, W, H);
+  bg.addColorStop(0, "#0070fd");
+  bg.addColorStop(0.5, "#14a6e0");
+  bg.addColorStop(1, "#00d1cb");
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, W, H);
+
+  const pad = 46;
+  roundRectPath(ctx, pad, pad, W - pad * 2, H - pad * 2, 30);
+  ctx.fillStyle = "#ffffff";
+  ctx.fill();
+
+  ctx.save();
+  ctx.strokeStyle = "rgba(31, 95, 191, 0.28)";
+  ctx.lineWidth = 3;
+  ctx.setLineDash([11, 9]);
+  roundRectPath(ctx, pad + 18, pad + 18, W - (pad + 18) * 2, H - (pad + 18) * 2, 22);
+  ctx.stroke();
+  ctx.restore();
+
+  ctx.textAlign = "center";
+
+  drawWordmark(ctx, W / 2, 156);
+
+  ctx.fillStyle = "#617083";
+  ctx.font = `600 22px ${DISPLAY_FONT}`;
+  ctx.fillText("CERTIFICATE OF COMPLETION", W / 2, 248);
+
+  ctx.fillStyle = "#102033";
+  ctx.font = `800 62px ${DISPLAY_FONT}`;
+  ctx.fillText(certName(), W / 2, 318);
+
+  ctx.fillStyle = "#617083";
+  ctx.font = "500 25px Inter, sans-serif";
+  ctx.fillText("completed the 20 to 32 Smile Check", W / 2, 362);
+
+  // Score + badge row.
+  ctx.font = `800 88px ${DISPLAY_FONT}`;
+  const scoreText = `${finalResult.score}`;
+  ctx.fillStyle = "#0070fd";
+  const scoreW = ctx.measureText(scoreText).width;
+  ctx.font = "700 30px Inter, sans-serif";
+  const slashW = ctx.measureText("/100").width;
+  const groupStart = W / 2 - (scoreW + slashW) / 2;
+  ctx.textAlign = "left";
+  ctx.font = `800 88px ${DISPLAY_FONT}`;
+  ctx.fillStyle = "#0070fd";
+  ctx.fillText(scoreText, groupStart, 478);
+  ctx.font = "700 30px Inter, sans-serif";
+  ctx.fillStyle = "#8a97a5";
+  ctx.fillText("/100", groupStart + scoreW + 4, 478);
+  ctx.textAlign = "center";
+
+  ctx.fillStyle = "#102033";
+  ctx.font = "700 30px Inter, sans-serif";
+  ctx.fillText(`${finalResult.badge.icon}  ${finalResult.badge.name}`, W / 2, 536);
+
+  ctx.fillStyle = "#7b8a9b";
+  ctx.font = "600 21px Inter, sans-serif";
+  ctx.fillText(certDateLabel().toUpperCase(), W / 2, 590);
+}
+
+function launchConfetti() {
+  if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    return;
+  }
+  const canvas = document.createElement("canvas");
+  canvas.className = "confetti-canvas";
+  canvas.setAttribute("aria-hidden", "true");
+  document.body.appendChild(canvas);
+  const ctx = canvas.getContext("2d");
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+
+  const colors = ["#0070fd", "#00d1cb", "#eab83a", "#c84b7d", "#5667d8"];
+  const pieces = Array.from({ length: 130 }, () => ({
+    x: Math.random() * canvas.width,
+    y: -20 - Math.random() * canvas.height * 0.6,
+    w: 6 + Math.random() * 8,
+    h: 9 + Math.random() * 10,
+    color: colors[Math.floor(Math.random() * colors.length)],
+    vy: 2.2 + Math.random() * 4,
+    vx: -2 + Math.random() * 4,
+    rot: Math.random() * Math.PI,
+    vr: -0.2 + Math.random() * 0.4,
+  }));
+
+  const start = performance.now();
+  function frame(now) {
+    const elapsed = now - start;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    pieces.forEach((p) => {
+      p.x += p.vx;
+      p.y += p.vy;
+      p.rot += p.vr;
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rot);
+      ctx.fillStyle = p.color;
+      ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+      ctx.restore();
+    });
+    if (elapsed < 2600) {
+      requestAnimationFrame(frame);
+    } else {
+      canvas.remove();
+    }
+  }
+  requestAnimationFrame(frame);
+}
+
 function renderCertificate() {
   if (!finalResult) {
+    if (!quizCompleted()) {
+      return; // nothing to certify yet
+    }
     finalResult = buildResult();
   }
 
-  certificateBadge.textContent = finalResult.badge.icon;
-  certificateBadgeName.textContent = finalResult.badge.name;
-  certificateScore.textContent = `${finalResult.score}/100`;
+  const savedName = localStorage.getItem("smileName") || "";
+  if (savedName && !certificateNameInput.value) {
+    certificateNameInput.value = savedName;
+  }
+
+  certStatus.textContent = "";
+  updateCertificateText();
+  drawCertificateCanvas();
+  // Redraw once web fonts are ready so the canvas uses Baloo 2, not a fallback.
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(drawCertificateCanvas);
+  }
+  launchConfetti();
+}
+
+async function shareOrDownloadCertificate(preferShare) {
+  drawCertificateCanvas();
+  certCanvas.toBlob(async (blob) => {
+    if (!blob) {
+      certStatus.textContent = "Could not create the image. Please try again.";
+      return;
+    }
+    const fileName = certFileName();
+
+    if (preferShare && navigator.canShare) {
+      const file = new File([blob], fileName, { type: "image/png" });
+      if (navigator.canShare({ files: [file] })) {
+        try {
+          await navigator.share({
+            files: [file],
+            title: "My 20 to 32 Smile Score",
+            text: `I scored ${finalResult.score}/100 on the 20 to 32 Smile Check!`,
+          });
+          certStatus.textContent = "Thanks for sharing!";
+          trackEngagement({ type: "certificate_share", section: "certificate", detail: finalResult.badge.name, value: true });
+          return;
+        } catch (error) {
+          // User cancelled the share sheet, or it failed — fall through to download.
+        }
+      }
+    }
+
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+    certStatus.textContent = preferShare
+      ? "Sharing isn't supported on this device, so we saved the image to your downloads instead."
+      : "Saved! Check your downloads.";
+    trackEngagement({ type: "certificate_download", section: "certificate", detail: finalResult.badge.name, value: true });
+  }, "image/png");
 }
 
 function restartApp() {
@@ -1768,9 +2144,27 @@ dashboardRetakeBtn.addEventListener("click", () => {
 });
 
 certificateBtn.addEventListener("click", () => {
+  // You can't certify a score you don't have — send first-timers to the quiz.
+  if (!finalResult && !quizCompleted()) {
+    currentQuestionIndex = 0;
+    renderQuestion();
+    showScreen("quiz");
+    quizStatus.textContent = "Take the Smile Check first — then you can grab your certificate!";
+    return;
+  }
   renderCertificate();
   showScreen("certificate");
 });
+
+certificateNameInput.addEventListener("input", () => {
+  const name = certificateNameInput.value.trim();
+  localStorage.setItem("smileName", name);
+  certificateName.textContent = certName();
+  drawCertificateCanvas();
+});
+
+downloadCertBtn.addEventListener("click", () => shareOrDownloadCertificate(false));
+shareCertBtn.addEventListener("click", () => shareOrDownloadCertificate(true));
 
 restartBtn.addEventListener("click", restartApp);
 
