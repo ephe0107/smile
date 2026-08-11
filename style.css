@@ -1791,6 +1791,102 @@ main:focus {
   color: var(--faint);
 }
 
+.population-trend-chart {
+  width: 100%;
+  min-height: 220px;
+}
+
+.trend-grid line {
+  stroke: var(--hairline);
+  stroke-width: 1;
+}
+
+.trend-axis text,
+.month-label {
+  fill: var(--faint);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.month-label {
+  text-anchor: middle;
+}
+
+.trend-line {
+  fill: none;
+  stroke-width: 4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.smile-line {
+  stroke: url("#smileTrendGradient");
+}
+
+.myth-line {
+  stroke: #f59f2f;
+  stroke-dasharray: 8 7;
+}
+
+.smile-dot {
+  fill: var(--blue);
+}
+
+.myth-dot {
+  fill: #f59f2f;
+}
+
+.performance-summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.performance-summary div {
+  padding: 14px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-sm);
+  background: var(--track);
+}
+
+.performance-summary span {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.performance-summary strong {
+  display: block;
+  margin-top: 8px;
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+}
+
+.performance-summary p {
+  color: var(--teal-ink);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.legend-dot.smile {
+  background: var(--blue);
+}
+
+.legend-dot.myth {
+  background: #f59f2f;
+}
+
 .risk-donut {
   width: 150px;
   height: 150px;
@@ -2782,6 +2878,7 @@ main:focus {
   .metric-grid,
   .summary-tiles,
   .explorer-grid,
+  .performance-summary,
   .mini-stat-grid {
     grid-template-columns: 1fr;
   }
