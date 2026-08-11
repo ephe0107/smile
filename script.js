@@ -1914,7 +1914,7 @@ function getPopulationPerformanceTrend(results, engagement = []) {
     const progress = index / (monthLabels.length - 1);
     return {
       month,
-      smileCheck: Math.round(68 + progress * 13),
+      smileCheck: Math.round(68 + progress * 15),
       mythQuiz: Math.round(65 + progress * 13),
     };
   });
