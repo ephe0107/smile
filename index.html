@@ -45,10 +45,8 @@
     <nav class="nav-links" aria-label="Main navigation">
       <a href="#quiz" data-screen-link="quiz">Quiz</a>
       <a href="#explorer" data-screen-link="explorer">Teeth</a>
-      <a href="#dashboard" data-screen-link="dashboard">History</a>
       <a href="#admin" data-screen-link="admin">Analytics</a>
       <a href="#impact" data-screen-link="impact">Impact</a>
-      <a href="#access" data-screen-link="access">Access</a>
       <a href="#team" data-screen-link="team">Team</a>
       <a href="#caregivers" data-screen-link="caregivers">Parents</a>
       <a href="#myths" data-screen-link="myths">Myths</a>
@@ -246,7 +244,6 @@
       <p class="save-status" id="saveStatus" role="status"></p>
 
       <div class="center-actions">
-        <button class="btn btn-primary" id="viewDashboardBtn" type="button">View Saved Results</button>
         <button class="btn btn-primary" id="goToMythsBtn" type="button">Try the Myth Quiz</button>
         <button class="btn btn-soft" id="retakeQuizBtn" type="button">Retake Smile Check</button>
       </div>
@@ -330,25 +327,7 @@
       </div>
     </section>
 
-    <!-- 5. Oral health access section -->
-    <section class="access section-screen" id="access">
-      <div class="section-heading">
-        <p class="eyebrow">Social and cultural oral health</p>
-        <h2>Oral Health Access Assessment</h2>
-        <p>These questions explore support needs and barriers to care. Barriers are not personal shortcomings.</p>
-      </div>
-
-      <div class="module-panel">
-        <div class="access-questions" id="accessQuestions"></div>
-        <article class="access-result-card" id="accessResult">
-          <span class="result-label">Supportive resources</span>
-          <h3>Complete the access check to see resources.</h3>
-          <p>Resources may include dental visit planning, anxiety support, transportation ideas, and cost-aware care options.</p>
-        </article>
-      </div>
-    </section>
-
-    <!-- 6. Interprofessional team section -->
+    <!-- 5. Interprofessional team section -->
     <section class="team section-screen" id="team">
       <div class="section-heading">
         <p class="eyebrow">Interprofessional collaboration</p>
@@ -366,7 +345,7 @@
       </div>
     </section>
 
-    <!-- 7. Parent and caregiver resources section -->
+    <!-- 6. Parent and caregiver resources section -->
     <section class="caregivers section-screen" id="caregivers">
       <div class="section-heading">
         <p class="eyebrow">Parent and caregiver resources</p>
@@ -377,32 +356,7 @@
       <div class="resource-grid" id="caregiverResources"></div>
     </section>
 
-    <!-- 8. Dashboard / History section -->
-    <section class="dashboard section-screen" id="dashboard">
-      <div class="section-heading">
-        <p class="eyebrow">Saved progress</p>
-        <h2>Dashboard / History</h2>
-        <p>Review previous Smile Check results saved by the backend.</p>
-      </div>
-
-      <div class="dashboard-panel">
-        <div class="dashboard-topline">
-          <div>
-            <span class="result-label">Past results</span>
-            <p id="historyStatus">Loading saved results...</p>
-          </div>
-          <button class="btn btn-soft" id="refreshHistoryBtn" type="button">Refresh History</button>
-        </div>
-
-        <div class="history-list" id="historyList"></div>
-      </div>
-
-      <div class="center-actions">
-        <button class="btn btn-primary" id="dashboardRetakeBtn" type="button">Retake Quiz</button>
-      </div>
-    </section>
-
-    <!-- 9. Admin analytics section -->
+    <!-- 7. Admin analytics section -->
     <section class="admin section-screen" id="admin">
       <div class="section-heading">
         <p class="eyebrow">Public health dashboard</p>
@@ -675,6 +629,46 @@
             <span>😁</span>
             <strong>Prevention</strong>
             <p>Checkups can catch problems early.</p>
+          </div>
+        </div>
+
+        <div class="doctor-recommendations">
+          <div class="section-heading compact-heading">
+            <p class="eyebrow">Parent recommendations</p>
+            <h3>What families are saying</h3>
+            <p>Short reflections on how 20 to 32 Smile Check can support youth oral health education at home.</p>
+          </div>
+
+          <div class="doctor-grid">
+            <article class="doctor-card">
+              <span class="doctor-initials">RW</span>
+              <div>
+                <h4>Roger Wan</h4>
+                <p>
+                  "Our 9 year old Charlie loved it and was able to see how his daily teeth habits connect to his Smile Score. It made brushing, flossing, and water after snacks feel easier to talk about at home."
+                </p>
+              </div>
+            </article>
+
+            <article class="doctor-card">
+              <span class="doctor-initials">GL</span>
+              <div>
+                <h4>George Liu</h4>
+                <p>
+                  "The platform turns prevention into something young patients can actually explore. The personalized recommendations are clear, age-appropriate, and useful for starting better conversations with families."
+                </p>
+              </div>
+            </article>
+
+            <article class="doctor-card">
+              <span class="doctor-initials">AN</span>
+              <div>
+                <h4>Anson Ng</h4>
+                <p>
+                  "I like that children can learn about tooth development, risk, and prevention in one interactive place. It helps make oral health education feel practical instead of intimidating."
+                </p>
+              </div>
+            </article>
           </div>
         </div>
       </div>

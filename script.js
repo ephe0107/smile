@@ -1008,6 +1008,8 @@ function renderResults() {
 }
 
 async function loadHistory() {
+  if (!historyStatus || !historyList || !refreshHistoryBtn) return;
+
   historyStatus.textContent = "Loading saved results...";
   historyList.innerHTML = "";
   refreshHistoryBtn.disabled = true;
@@ -1082,6 +1084,8 @@ function sparklineSvg(scores) {
 }
 
 function renderHistory(results) {
+  if (!historyStatus || !historyList) return;
+
   historyList.innerHTML = "";
 
   if (!results.length) {
@@ -1342,6 +1346,8 @@ function saveAgeLookup() {
 }
 
 function renderAccessAssessment() {
+  if (!accessQuestions || !accessResult) return;
+
   const answers = {};
   accessQuestions.innerHTML = "";
 
@@ -2225,10 +2231,12 @@ nextQuestionBtn.addEventListener("click", () => {
   showScreen("results");
 });
 
-viewDashboardBtn.addEventListener("click", () => {
-  loadHistory();
-  showScreen("dashboard");
-});
+if (viewDashboardBtn) {
+  viewDashboardBtn.addEventListener("click", () => {
+    loadHistory();
+    showScreen("dashboard");
+  });
+}
 
 goToMythsBtn.addEventListener("click", () => {
   renderMyths();
@@ -2241,7 +2249,9 @@ retakeQuizBtn.addEventListener("click", () => {
   showScreen("quiz");
 });
 
-refreshHistoryBtn.addEventListener("click", loadHistory);
+if (refreshHistoryBtn) {
+  refreshHistoryBtn.addEventListener("click", loadHistory);
+}
 
 refreshAnalyticsBtn.addEventListener("click", loadAnalytics);
 
@@ -2253,11 +2263,13 @@ ageSlider.addEventListener("input", () => {
 
 ageSlider.addEventListener("change", saveAgeLookup);
 
-dashboardRetakeBtn.addEventListener("click", () => {
-  currentQuestionIndex = 0;
-  renderQuestion();
-  showScreen("quiz");
-});
+if (dashboardRetakeBtn) {
+  dashboardRetakeBtn.addEventListener("click", () => {
+    currentQuestionIndex = 0;
+    renderQuestion();
+    showScreen("quiz");
+  });
+}
 
 certificateBtn.addEventListener("click", () => {
   // You can't certify a score you don't have — send first-timers to the quiz.
@@ -2308,11 +2320,6 @@ document.querySelectorAll("[data-screen-link]").forEach((link) => {
 
     if (screenId === "impact") {
       loadImpactMetrics();
-    }
-
-    if (screenId === "access") {
-      renderAccessAssessment();
-      trackEngagement({ type: "module_open", section: "access", detail: "Oral Health Access Assessment" });
     }
 
     if (screenId === "team") {
