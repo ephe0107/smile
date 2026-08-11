@@ -1908,19 +1908,14 @@ function renderColumnChart(container, counts, total) {
 
 function getPopulationPerformanceTrend(results, engagement = []) {
   const monthLabels = ["Mar", "Apr", "May", "Jun", "Jul", "Aug"];
-  const totalResults = results.length || 521;
-  const totalMythAnswers = engagement.filter((event) => event.type === "myth_quiz_answer").length || 310;
 
   // Aggregate projection for the whole platform: realistic improvement as education exposure increases.
   return monthLabels.map((month, index) => {
     const progress = index / (monthLabels.length - 1);
-    const cohortLift = Math.min(totalResults / 700, 1) * 3;
-    const mythLift = Math.min(totalMythAnswers / 420, 1) * 4;
-
     return {
       month,
-      smileCheck: Math.round(66 + progress * 18 + cohortLift + (index % 2 === 0 ? 0 : 1)),
-      mythQuiz: Math.round(58 + progress * 24 + mythLift + (index === 2 ? -1 : 0)),
+      smileCheck: Math.round(68 + progress * 13),
+      mythQuiz: Math.round(65 + progress * 13),
     };
   });
 }
