@@ -450,6 +450,9 @@ const metricGrid = document.querySelector("#metricGrid");
 const scoreDistributionChart = document.querySelector("#scoreDistributionChart");
 const riskDistributionChart = document.querySelector("#riskDistributionChart");
 const issueChart = document.querySelector("#issueChart");
+const engagementTrendChart = document.querySelector("#engagementTrendChart");
+const preventionMixChart = document.querySelector("#preventionMixChart");
+const learningReadinessChart = document.querySelector("#learningReadinessChart");
 const impactHeadline = document.querySelector("#impactHeadline");
 const impactSummary = document.querySelector("#impactSummary");
 const impactMetricsStatus = document.querySelector("#impactMetricsStatus");
@@ -1597,6 +1600,107 @@ function renderColumnChart(container, counts, total) {
   `;
 }
 
+function renderEngagementTrendChart(results) {
+  const sortedScores = [...results]
+    .sort((a, b) => new Date(a.completedAt) - new Date(b.completedAt))
+    .slice(-8)
+    .map((result) => Number(result.score));
+  const scores = sortedScores.length ? sortedScores : [62, 66, 70, 68, 74, 78, 82, 86];
+  const points = scores.map((score, index) => {
+    const x = scores.length === 1 ? 260 : 24 + index * (472 / (scores.length - 1));
+    const y = 164 - (score / 100) * 124;
+    return `${x},${y}`;
+  });
+  const latest = scores[scores.length - 1];
+  const previous = scores.length > 1 ? scores[scores.length - 2] : latest;
+  const change = latest - previous;
+
+  engagementTrendChart.innerHTML = `
+    <svg viewBox="0 0 520 190" role="img" aria-label="Engagement trend line chart">
+      <defs>
+        <linearGradient id="trendGradient" x1="0" x2="1">
+          <stop offset="0%" stop-color="#1f5fbf" />
+          <stop offset="100%" stop-color="#2bb9a6" />
+        </linearGradient>
+      </defs>
+      <g class="spark-grid">
+        <line x1="24" y1="40" x2="496" y2="40" />
+        <line x1="24" y1="102" x2="496" y2="102" />
+        <line x1="24" y1="164" x2="496" y2="164" />
+      </g>
+      <polyline points="${points.join(" ")}" />
+      ${scores
+        .map((score, index) => {
+          const [x, y] = points[index].split(",");
+          return `<circle cx="${x}" cy="${y}" r="5"><title>${score}/100</title></circle>`;
+        })
+        .join("")}
+    </svg>
+    <div class="chart-callout">
+      <strong>${latest}/100</strong>
+      <span>${change >= 0 ? "+" : ""}${change} from previous saved result</span>
+    </div>
+  `;
+}
+
+function renderPreventionMixChart(weaknessCounts, total) {
+  const entries = Object.entries(weaknessCounts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 4);
+
+  preventionMixChart.innerHTML = `
+    <div class="stacked-bar" role="img" aria-label="Prevention focus stacked chart">
+      ${entries
+        .map(([label, count], index) => `<span class="stack-segment segment-${index + 1}" style="--w: ${Math.max(percent(count, total), 8)}%"><i>${label}</i></span>`)
+        .join("")}
+    </div>
+    <div class="stacked-list">
+      ${entries
+        .map(([label, count], index) => `
+          <div>
+            <span><i class="segment-${index + 1}"></i>${label}</span>
+            <strong>${percent(count, total)}%</strong>
+          </div>
+        `)
+        .join("")}
+    </div>
+  `;
+}
+
+function renderLearningReadinessChart(results) {
+  const categories = ["brushing", "flossing", "diet", "fluoride", "care"];
+  const labels = ["Hygiene", "Flossing", "Diet", "Fluoride", "Care"];
+  const averages = categories.map((category) => {
+    const values = results
+      .map((result) => result.categoryScores?.[category]?.score)
+      .filter((score) => Number.isFinite(Number(score)))
+      .map(Number);
+    return values.length ? Math.round(values.reduce((sum, score) => sum + score, 0) / values.length) : 60;
+  });
+  const polygon = averages.map((score, index) => {
+    const angle = -Math.PI / 2 + index * ((Math.PI * 2) / averages.length);
+    const radius = 18 + (score / 100) * 62;
+    return `${100 + Math.cos(angle) * radius},${100 + Math.sin(angle) * radius}`;
+  });
+
+  learningReadinessChart.innerHTML = `
+    <svg class="radar-chart" viewBox="0 0 200 200" role="img" aria-label="Learning readiness radar chart">
+      <polygon class="radar-ring" points="100,20 176,75 147,165 53,165 24,75" />
+      <polygon class="radar-ring inner" points="100,55 143,86 126,136 74,136 57,86" />
+      <polygon class="radar-shape" points="${polygon.join(" ")}" />
+      ${labels
+        .map((label, index) => {
+          const angle = -Math.PI / 2 + index * ((Math.PI * 2) / labels.length);
+          return `<text x="${100 + Math.cos(angle) * 88}" y="${104 + Math.sin(angle) * 88}">${label}</text>`;
+        })
+        .join("")}
+    </svg>
+    <div class="radar-score-list">
+      ${labels.map((label, index) => `<span>${label}<strong>${averages[index]}%</strong></span>`).join("")}
+    </div>
+  `;
+}
+
 function getEngagementSummary(engagement = []) {
   const events = Array.isArray(engagement) ? engagement : [];
   const mythAnswers = events.filter((event) => event.type === "myth_quiz_answer");
@@ -1633,6 +1737,9 @@ function renderAnalytics(results, engagement = []) {
     scoreDistributionChart.innerHTML = `<div class="empty-history">Complete quizzes to populate score distribution.</div>`;
     riskDistributionChart.innerHTML = `<div class="empty-history">Risk distribution will appear after results are saved.</div>`;
     issueChart.innerHTML = `<div class="empty-history">Common oral health issues will appear here.</div>`;
+    engagementTrendChart.innerHTML = `<div class="empty-history">Demo trend chart will appear after results load.</div>`;
+    preventionMixChart.innerHTML = `<div class="empty-history">Demo prevention mix will appear after results load.</div>`;
+    learningReadinessChart.innerHTML = `<div class="empty-history">Demo readiness chart will appear after results load.</div>`;
     impactHeadline.textContent = "No population data yet";
     impactSummary.textContent = "Once youth complete the quiz, this dashboard will reveal education gaps and prevention priorities.";
     return;
@@ -1663,6 +1770,9 @@ function renderAnalytics(results, engagement = []) {
   renderColumnChart(scoreDistributionChart, getScoreDistribution(results), total);
   renderRiskDonut(riskCounts, total);
   renderHorizontalChart(issueChart, weaknessCounts, total);
+  renderEngagementTrendChart(results);
+  renderPreventionMixChart(weaknessCounts, total);
+  renderLearningReadinessChart(results);
 
   impactHeadline.textContent = `${commonWeakness.label} is the clearest education gap`;
   impactSummary.textContent =
@@ -1676,6 +1786,9 @@ async function loadAnalytics() {
   scoreDistributionChart.innerHTML = "";
   riskDistributionChart.innerHTML = "";
   issueChart.innerHTML = "";
+  engagementTrendChart.innerHTML = "";
+  preventionMixChart.innerHTML = "";
+  learningReadinessChart.innerHTML = "";
   refreshAnalyticsBtn.disabled = true;
 
   try {
@@ -1690,6 +1803,9 @@ async function loadAnalytics() {
     scoreDistributionChart.innerHTML = `<div class="empty-history">Start the backend to calculate analytics.</div>`;
     riskDistributionChart.innerHTML = `<div class="empty-history">Risk data is unavailable right now.</div>`;
     issueChart.innerHTML = `<div class="empty-history">Issue data is unavailable right now.</div>`;
+    engagementTrendChart.innerHTML = `<div class="empty-history">Trend chart needs backend data.</div>`;
+    preventionMixChart.innerHTML = `<div class="empty-history">Prevention mix needs backend data.</div>`;
+    learningReadinessChart.innerHTML = `<div class="empty-history">Readiness chart needs backend data.</div>`;
     impactHeadline.textContent = "Analytics unavailable";
     impactSummary.textContent = "The admin dashboard uses saved backend results, so the backend must be running.";
   } finally {
