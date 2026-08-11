@@ -11,7 +11,8 @@ const crypto = require("crypto");
 const PORT = process.env.PORT || 3000;
 const HOST = process.env.HOST || "0.0.0.0";
 const ROOT = __dirname;
-const DATA_DIR = path.join(ROOT, "data");
+const DATA_DIR = process.env.DATA_DIR || path.join(ROOT, "data");
+const ADMIN_PIN = process.env.ADMIN_PIN || "";
 const RESULTS_FILE = path.join(DATA_DIR, "results.json");
 const EXPLORER_ANALYTICS_FILE = path.join(DATA_DIR, "tooth-explorer-analytics.json");
 const ENGAGEMENT_ANALYTICS_FILE = path.join(DATA_DIR, "engagement-analytics.json");
@@ -29,6 +30,21 @@ const contentTypes = {
 function sendJson(response, statusCode, data) {
   response.writeHead(statusCode, { "Content-Type": "application/json; charset=utf-8" });
   response.end(JSON.stringify(data));
+}
+
+function requireAdmin(request, response) {
+  if (!ADMIN_PIN) {
+    return true;
+  }
+
+  const suppliedPin = request.headers["x-admin-pin"];
+
+  if (suppliedPin === ADMIN_PIN) {
+    return true;
+  }
+
+  sendJson(response, 401, { error: "Admin approval PIN required." });
+  return false;
 }
 
 function ensureDataFile() {
@@ -299,7 +315,9 @@ function getApprovedComments(response) {
   }
 }
 
-function getPendingComments(response) {
+function getPendingComments(request, response) {
+  if (!requireAdmin(request, response)) return;
+
   try {
     const comments = readJsonArray(COMMENTS_FILE)
       .filter((comment) => comment.status === "pending")
@@ -350,6 +368,8 @@ async function saveComment(request, response) {
 }
 
 async function moderateComment(request, response) {
+  if (!requireAdmin(request, response)) return;
+
   try {
     const body = await readRequestBody(request);
     const input = JSON.parse(body);
@@ -411,6 +431,11 @@ function serveFile(request, response) {
 }
 
 const server = http.createServer((request, response) => {
+  if (request.url === "/health" && request.method === "GET") {
+    sendJson(response, 200, { status: "ok" });
+    return;
+  }
+
   if (request.url === "/results" && request.method === "GET") {
     getResults(response);
     return;
@@ -447,7 +472,7 @@ const server = http.createServer((request, response) => {
   }
 
   if (request.url === "/comments/pending" && request.method === "GET") {
-    getPendingComments(response);
+    getPendingComments(request, response);
     return;
   }
 

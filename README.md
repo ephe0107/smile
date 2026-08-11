@@ -167,9 +167,21 @@ data/tooth-explorer-analytics.json
 
 Because this version has a backend, it cannot be hosted by GitHub Pages alone. GitHub Pages can host static websites, but it cannot run `server.js`.
 
-Beginner-friendly full-stack hosting options include Render, Railway, Fly.io, or a similar Node.js hosting service.
+This repo includes a `render.yaml` file for Render. It is set up as a Node web service that runs:
+
+```text
+npm start
+```
 
 The server uses `process.env.PORT`, which is what most hosting services provide automatically.
+
+For live saved results, comments, and analytics, the app needs persistent storage. The Render setup uses:
+
+```text
+DATA_DIR=/var/data
+```
+
+Set an `ADMIN_PIN` environment variable on Render. That PIN is required before pending comments can be approved or rejected.
 
 ## Educational Note
 

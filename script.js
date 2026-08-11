@@ -1557,7 +1557,7 @@ async function loadPendingComments() {
   moderationStatus.textContent = "Loading pending comments...";
 
   try {
-    const data = await fetchJsonApi(`${COMMENTS_API}/pending`, "Pending comments");
+    const data = await fetchAdminJson(`${COMMENTS_API}/pending`, "Pending comments");
     renderPendingComments(data.comments || []);
   } catch (error) {
     moderationStatus.textContent = `Could not load comments: ${error.message}`;
@@ -1565,20 +1565,59 @@ async function loadPendingComments() {
   }
 }
 
+function getAdminPin() {
+  const savedPin = sessionStorage.getItem("smileAdminPin");
+
+  if (savedPin) {
+    return savedPin;
+  }
+
+  const enteredPin = window.prompt("Enter the admin approval PIN to review comments.");
+
+  if (enteredPin) {
+    sessionStorage.setItem("smileAdminPin", enteredPin);
+  }
+
+  return enteredPin;
+}
+
+async function fetchAdminJson(url, fallbackKey, options = {}) {
+  const pin = getAdminPin();
+
+  if (!pin) {
+    throw new Error("Admin approval PIN was not entered.");
+  }
+
+  const response = await fetch(url, {
+    ...options,
+    headers: {
+      ...(options.headers || {}),
+      "X-Admin-Pin": pin,
+    },
+  });
+  const data = await response.json();
+
+  if (response.status === 401) {
+    sessionStorage.removeItem("smileAdminPin");
+    throw new Error("That admin PIN did not work.");
+  }
+
+  if (!response.ok) {
+    throw new Error(data.error || `${fallbackKey} could not be loaded.`);
+  }
+
+  return data;
+}
+
 async function moderateComment(id, action) {
   if (!id || !action) return;
 
   try {
-    const response = await fetch(`${COMMENTS_API}/moderate`, {
+    await fetchAdminJson(`${COMMENTS_API}/moderate`, "Comment moderation", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id, action }),
     });
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data.error || "Comment could not be moderated.");
-    }
 
     await loadPendingComments();
     await loadApprovedComments();
