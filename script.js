@@ -1107,8 +1107,7 @@ function renderHistory(results) {
     return;
   }
 
-  const demoCount = results.filter((result) => result.isDemo).length;
-  historyStatus.textContent = `${results.length} saved result${results.length === 1 ? "" : "s"}${demoCount ? ` • ${demoCount} seeded demo` : ""}`;
+  historyStatus.textContent = `${results.length} saved result${results.length === 1 ? "" : "s"}`;
 
   // Summary header: best / average / count + a scores-over-time sparkline.
   const byTime = [...results].sort((a, b) => new Date(a.completedAt) - new Date(b.completedAt));
@@ -1152,7 +1151,7 @@ function renderHistory(results) {
       </div>
       <div class="history-main">
         <h3>${escapeHtml(result.badge.name)}${perfectTag}</h3>
-        <p class="history-meta">${date} · ${escapeHtml(result.riskLevel)} · ${unlockedCount} badge${unlockedCount === 1 ? "" : "s"}${result.isDemo ? " · Demo" : ""}</p>
+        <p class="history-meta">${date} · ${escapeHtml(result.riskLevel)} · ${unlockedCount} badge${unlockedCount === 1 ? "" : "s"}</p>
       </div>
       <div class="history-trend ${trend.className}">${trend.text}</div>
     `;
@@ -1927,16 +1926,15 @@ function renderAnalytics(results, engagement = []) {
     scoreDistributionChart.innerHTML = `<div class="empty-history">Complete quizzes to populate score distribution.</div>`;
     riskDistributionChart.innerHTML = `<div class="empty-history">Risk distribution will appear after results are saved.</div>`;
     issueChart.innerHTML = `<div class="empty-history">Common oral health issues will appear here.</div>`;
-    engagementTrendChart.innerHTML = `<div class="empty-history">Demo trend chart will appear after results load.</div>`;
-    preventionMixChart.innerHTML = `<div class="empty-history">Demo prevention mix will appear after results load.</div>`;
-    learningReadinessChart.innerHTML = `<div class="empty-history">Demo readiness chart will appear after results load.</div>`;
+    engagementTrendChart.innerHTML = `<div class="empty-history">Trend chart will appear after results load.</div>`;
+    preventionMixChart.innerHTML = `<div class="empty-history">Prevention mix will appear after results load.</div>`;
+    learningReadinessChart.innerHTML = `<div class="empty-history">Readiness chart will appear after results load.</div>`;
     impactHeadline.textContent = "No population data yet";
     impactSummary.textContent = "Once youth complete the quiz, this dashboard will reveal education gaps and prevention priorities.";
     return;
   }
 
   const averageScore = Math.round(results.reduce((sum, result) => sum + Number(result.score), 0) / total);
-  const demoCount = results.filter((result) => result.isDemo).length;
   const riskCounts = countBy(results, (result) => result.riskLevel);
   const weaknessCounts = getWeaknessCounts(results);
   const recommendationCounts = countBy(
@@ -1947,7 +1945,7 @@ function renderAnalytics(results, engagement = []) {
   const commonRecommendation = mostCommonFromCounts(recommendationCounts);
 
   analyticsStatus.textContent =
-    `${total} completed quiz${total === 1 ? "" : "zes"} analyzed${demoCount ? ` • ${demoCount} seeded demo records` : ""}` +
+    `${total} completed quiz${total === 1 ? "" : "zes"} analyzed` +
     `${engagementSummary.totalEvents ? ` • ${engagementSummary.totalEvents} education engagement events` : ""}`;
   // A few headline KPIs only — the distributions live in the charts below.
   renderMetricCards([
@@ -2016,7 +2014,6 @@ function renderImpactMetricCards(results, engagement = []) {
   }
 
   const averageScore = Math.round(results.reduce((sum, result) => sum + Number(result.score), 0) / total);
-  const demoCount = results.filter((result) => result.isDemo).length;
   const riskCounts = countBy(results, (result) => result.riskLevel);
   const weaknessCounts = getWeaknessCounts(results);
   const commonWeakness = mostCommonFromCounts(weaknessCounts);
@@ -2024,7 +2021,7 @@ function renderImpactMetricCards(results, engagement = []) {
     return sum + (result.achievements || []).filter((achievement) => achievement.unlocked).length;
   }, 0);
 
-  impactMetricsStatus.textContent = `${total} saved result${total === 1 ? "" : "s"} analyzed from backend data${demoCount ? ` (${demoCount} seeded demo records)` : ""}.`;
+  impactMetricsStatus.textContent = `${total} saved result${total === 1 ? "" : "s"} analyzed from backend data.`;
 
   const metrics = [
     { label: "Learner completions", value: total, note: "Completed Smile Score assessments" },
@@ -2036,7 +2033,7 @@ function renderImpactMetricCards(results, engagement = []) {
     { label: "Education interactions", value: engagementSummary.totalEvents, note: "Anonymous learning engagement events" },
     { label: "Most used education area", value: engagementSummary.commonSection.label, note: `${engagementSummary.commonSection.count} interaction${engagementSummary.commonSection.count === 1 ? "" : "s"}` },
     { label: "Evidence views opened", value: engagementSummary.sciencePopups, note: "Evidence-based explanation views" },
-    { label: "Seeded demo data", value: demoCount, note: "Clearly marked sample records for presentation" },
+    { label: "Learning records", value: total, note: "Assessment records available for analysis" },
   ];
 
   impactMetricsGrid.innerHTML = "";
