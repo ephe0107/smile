@@ -43,79 +43,103 @@
     </a>
 
     <nav class="nav-links" aria-label="Main navigation">
-      <a href="#quiz" data-screen-link="quiz">Quiz</a>
-      <a href="#explorer" data-screen-link="explorer">Teeth</a>
+      <a href="#home" data-screen-link="home">Home</a>
+      <a href="#quiz" data-screen-link="quiz">Smile Check</a>
+      <a href="#results" data-screen-link="results">My report</a>
+      <a href="#dashboard" data-screen-link="dashboard">History</a>
       <a href="#admin" data-screen-link="admin">Analytics</a>
       <a href="#impact" data-screen-link="impact">Impact</a>
-      <a href="#team" data-screen-link="team">Team</a>
-      <a href="#caregivers" data-screen-link="caregivers">Parents</a>
-      <a href="#myths" data-screen-link="myths">Myths</a>
-      <a href="#about">About</a>
     </nav>
+
+    <span class="streak-pill"><i aria-hidden="true"></i>4-day streak</span>
   </header>
 
   <main id="mainContent" tabindex="-1">
     <!-- 1. Landing page section -->
-    <section class="hero section-screen active-screen" id="home">
+    <section class="home-screen section-screen active-screen" id="home">
+      <div class="hero">
       <div class="hero-copy">
-        <p class="eyebrow">Preventive oral health platform</p>
-        <h1>20 to 32 Smile Check</h1>
-        <p class="subtitle">Learn how your daily habits affect your smile.</p>
+        <p class="eyebrow">Made for ages 5 to 18</p>
+        <h1>How is your smile doing today?</h1>
         <p class="hero-text">
-          A guided education platform for youth, parents, and dental teams. Complete
-          a short assessment, review personalized prevention insights, and track
-          oral health learning over time.
+          Ten quick questions about brushing, snacks and dentist visits. You get a
+          Smile Score out of 100, and the reason behind every number.
         </p>
 
         <div class="hero-actions">
-          <button class="btn btn-primary" id="startQuizBtn" type="button">Start Smile Check</button>
-          <a class="btn btn-soft" href="#about">Learn about the project</a>
+          <button class="btn btn-primary btn-lg" id="startQuizBtn" type="button">Start Smile Check</button>
+          <a class="btn btn-soft btn-lg" href="#impact" data-screen-link="impact">See how it works</a>
+        </div>
+
+        <div class="trust-row">
+          <span><i class="dot-teal" aria-hidden="true"></i>No sign-up</span>
+          <span><i class="dot-sun" aria-hidden="true"></i>Two minutes</span>
+          <span><i class="dot-blush" aria-hidden="true"></i>Nothing personal saved</span>
         </div>
       </div>
 
-      <div class="hero-card" aria-label="Oral health platform preview">
-        <!-- Mascot takes over when images/mascot.png exists; otherwise the SVG below stays. -->
-        <img
-          class="hero-mascot"
-          src="images/mascot.png"
-          alt="Smiley, the 20 to 32 mascot — a happy tooth holding a toothbrush"
-          onload="this.closest('.hero-card').classList.add('show-mascot')"
-          onerror="this.remove()"
-        />
-        <div class="clinical-illustration" aria-hidden="true">
-          <svg viewBox="0 0 420 300">
-            <rect x="36" y="46" width="348" height="214" rx="32" class="screen-shape" />
-            <rect x="68" y="78" width="152" height="18" rx="9" class="line-shape primary-line" />
-            <rect x="68" y="112" width="238" height="12" rx="6" class="line-shape" />
-            <rect x="68" y="138" width="180" height="12" rx="6" class="line-shape" />
-            <circle cx="306" cy="112" r="42" class="chart-ring" />
-            <path d="M301 76c20 0 37 15 40 34" class="chart-arc" />
-            <path d="M175 175c9-28 27-47 51-47s42 19 51 47c10 33-8 67-28 67-13 0-12-28-23-28s-10 28-23 28c-20 0-38-34-28-67Z" class="tooth-shape" />
-            <path d="M126 210h-36c-12 0-22-10-22-22s10-22 22-22h46" class="care-line" />
-            <path d="M292 210h38c12 0 22-10 22-22s-10-22-22-22h-44" class="care-line" />
-          </svg>
-        </div>
-        <div class="mini-stat-grid">
-          <div>
-            <strong>10</strong>
-            <span>quick questions</span>
+      <div class="hero-card" aria-label="Your Smile Check so far">
+        <div class="hero-card-inner">
+          <div class="hero-card-top">
+            <p>Welcome back</p>
+            <span class="level-chip">Level 4 · Plaque Fighter</span>
           </div>
-          <div>
-            <strong>2 min</strong>
-            <span>to your Smile Score</span>
+
+          <div class="hero-mascot-wrap">
+            <img
+              class="hero-mascot"
+              src="images/mascot.png"
+              alt="Smiley, the 20 to 32 mascot — a happy tooth holding a toothbrush"
+              onerror="this.remove()"
+            />
+          </div>
+
+          <p class="speech-panel">Last time you scored 72. Beat it?</p>
+
+          <div class="xp-meter-label"><span>Next badge</span><span>640 / 1000 XP</span></div>
+          <div class="xp-track" aria-hidden="true"><b style="width: 64%"></b></div>
+
+          <div class="mini-stat-grid">
+            <div>
+              <strong>10</strong>
+              <span>quick questions</span>
+            </div>
+            <div>
+              <strong>2 min</strong>
+              <span>to your score</span>
+            </div>
           </div>
         </div>
+      </div>
+      </div>
+
+      <!-- The four entry points into the platform. -->
+      <div class="feature-row">
+      <button class="feature-card" type="button" data-goto="quiz">
+        <span class="swatch" style="background: var(--blue-soft)" aria-hidden="true"></span>
+        <b>Smile Check</b>
+        <p>Ten questions, one score out of 100.</p>
+      </button>
+      <button class="feature-card" type="button" data-goto="explorer">
+        <span class="swatch" style="background: var(--teal-soft)" aria-hidden="true"></span>
+        <b>Tooth Explorer</b>
+        <p>See which teeth show up at your age.</p>
+      </button>
+      <button class="feature-card" type="button" data-goto="myths">
+        <span class="swatch" style="background: var(--sun-soft)" aria-hidden="true"></span>
+        <b>Myth Quiz</b>
+        <p>Bust the ones everybody believes.</p>
+      </button>
+      <button class="feature-card" type="button" data-goto="dashboard">
+        <span class="swatch" style="background: var(--blush)" aria-hidden="true"></span>
+        <b>Your History</b>
+        <p>Watch the score move over time.</p>
+      </button>
       </div>
     </section>
 
     <!-- 2. Smile Check Quiz section -->
     <section class="quiz-shell section-screen" id="quiz" aria-live="polite">
-      <div class="section-heading">
-        <p class="eyebrow">Step 1</p>
-        <h2>Smile Check Quiz</h2>
-        <p>Choose the answer that best matches your usual routine.</p>
-      </div>
-
       <div class="quiz-card">
         <div class="progress-row">
           <span id="questionCounter">Question 1 of 10</span>
@@ -131,34 +155,31 @@
 
         <div class="quiz-actions">
           <button class="btn btn-soft" id="prevQuestionBtn" type="button">Back</button>
-          <button class="btn btn-primary" id="nextQuestionBtn" type="button">Next</button>
+          <button class="btn btn-primary" id="nextQuestionBtn" type="button">Next question</button>
+          <span class="quiz-hint" id="quizHint">Pick the answer closest to your usual week</span>
         </div>
       </div>
     </section>
 
     <!-- 3. Results page section -->
     <section class="results section-screen" id="results">
-      <div class="section-heading">
-        <p class="eyebrow">Step 2</p>
-        <h2>Your Smile Results</h2>
-        <p>Your score is educational, not a diagnosis. A dentist can give personal medical advice.</p>
-      </div>
-
       <div class="results-grid">
         <article class="result-card score-card">
-          <span class="result-label">Smile Score</span>
-          <div class="big-score"><span id="scoreNumber">0</span>/100</div>
-          <div class="risk-pill" id="riskLevel">Risk level</div>
+          <div>
+            <span class="result-label">Your Smile Score</span>
+            <div class="score-ring" id="scoreRing" style="--score: 0">
+              <div class="score-ring-inner">
+                <div>
+                  <div class="big-score" id="scoreNumber">0</div>
+                  <small>out of 100</small>
+                </div>
+              </div>
+            </div>
+            <div class="risk-pill" id="riskLevel">Risk level</div>
+          </div>
         </article>
 
-        <article class="result-card badge-card">
-          <span class="result-label">Badge unlocked</span>
-          <div class="badge-icon" id="badgeIcon">🏅</div>
-          <h3 id="badgeName">Badge name</h3>
-          <p id="badgeMessage">Badge message</p>
-        </article>
-      </div>
-
+        <div class="results-stack">
       <article class="visual-dashboard">
         <div class="dashboard-summary">
           <div>
@@ -184,6 +205,17 @@
           </div>
         </div>
       </article>
+
+      <article class="badge-card">
+        <div>
+          <span class="result-label">Badge unlocked</span>
+          <h3 id="badgeName">Badge name</h3>
+          <p id="badgeMessage">Badge message</p>
+        </div>
+        <div class="badge-icon" id="badgeIcon">🏅</div>
+      </article>
+        </div>
+      </div>
 
       <article class="report-card">
         <div class="report-heading">
@@ -246,6 +278,35 @@
       <div class="center-actions">
         <button class="btn btn-primary" id="goToMythsBtn" type="button">Try the Myth Quiz</button>
         <button class="btn btn-soft" id="retakeQuizBtn" type="button">Retake Smile Check</button>
+      </div>
+    </section>
+
+    <!-- 3b. History section — saved Smile Checks over time. -->
+    <section class="dashboard section-screen" id="dashboard">
+      <div class="section-heading">
+        <h2>Your last six checks</h2>
+        <p>Scores move slowly. Anything above the line you drew last month counts.</p>
+      </div>
+
+      <div class="history-chart-card">
+        <div class="dashboard-topline">
+          <div>
+            <span class="result-label">Saved results</span>
+            <p id="historyStatus">Loading saved results...</p>
+          </div>
+          <button class="btn btn-soft" id="refreshHistoryBtn" type="button">Refresh history</button>
+        </div>
+
+        <div class="history-columns" id="historyColumns" aria-hidden="true"></div>
+        <div class="history-labels" id="historyLabels" aria-hidden="true"></div>
+      </div>
+
+      <div class="summary-tiles" id="historyTiles"></div>
+
+      <div class="history-list" id="historyList"></div>
+
+      <div class="center-actions">
+        <button class="btn btn-primary" id="dashboardRetakeBtn" type="button">Retake the check</button>
       </div>
     </section>
 
@@ -617,7 +678,7 @@
     </section>
 
     <!-- About section requested in the prompt. -->
-    <section class="about" id="about">
+    <section class="about section-screen" id="about">
       <div class="about-card">
         <p class="eyebrow">About this project</p>
         <h2>Preventive oral health education for youth</h2>
@@ -711,7 +772,15 @@
   </main>
 
   <footer class="site-footer">
-    <p>© 2026 20 to 32 Smile Check. Educational use only.</p>
+    <span>© 2026 20 to 32 Smile Check</span>
+    <nav class="footer-links" aria-label="More sections">
+      <a href="#explorer" data-screen-link="explorer">Tooth Explorer</a>
+      <a href="#myths" data-screen-link="myths">Myth Quiz</a>
+      <a href="#team" data-screen-link="team">Your oral health team</a>
+      <a href="#caregivers" data-screen-link="caregivers">For parents</a>
+      <a href="#about" data-screen-link="about">About</a>
+    </nav>
+    <span>Educational only. It does not diagnose anything.</span>
   </footer>
 
   <!-- The quiz logic lives in script.js. -->

@@ -392,6 +392,11 @@ const quizProgress = document.querySelector("#quizProgress");
 const questionText = document.querySelector("#questionText");
 const answerGrid = document.querySelector("#answerGrid");
 const quizStatus = document.querySelector("#quizStatus");
+const quizHint = document.querySelector("#quizHint");
+const scoreRing = document.querySelector("#scoreRing");
+const historyColumns = document.querySelector("#historyColumns");
+const historyLabels = document.querySelector("#historyLabels");
+const historyTiles = document.querySelector("#historyTiles");
 const prevQuestionBtn = document.querySelector("#prevQuestionBtn");
 const nextQuestionBtn = document.querySelector("#nextQuestionBtn");
 const scoreNumber = document.querySelector("#scoreNumber");
@@ -498,7 +503,9 @@ function showScreen(screenId) {
     }
   });
 
-  document.querySelector(`#${screenId}`).scrollIntoView({ behavior: "smooth", block: "start" });
+  // Screens replace each other, so start each one at the top rather than
+  // scrolling to a section that is already the only thing rendered.
+  window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
 function selectedAnswerFor(index) {
@@ -528,20 +535,43 @@ function renderQuestion() {
     }
 
     button.innerHTML = `
-      <span class="answer-marker">${String.fromCharCode(65 + answerIndex)}</span>
       <span>${answer.text}</span>
+      <span class="answer-marker" aria-hidden="true"></span>
     `;
 
+    // Picking an answer records it and moves straight on; the last question
+    // goes to the report.
     button.addEventListener("click", () => {
       selectedAnswers[currentQuestionIndex] = answerIndex;
+
+      if (currentQuestionIndex >= quizQuestions.length - 1) {
+        renderQuestion();
+        finishQuiz();
+        return;
+      }
+
+      currentQuestionIndex += 1;
       renderQuestion();
     });
 
     answerGrid.appendChild(button);
   });
 
+  const isLast = currentQuestionIndex === quizQuestions.length - 1;
   prevQuestionBtn.disabled = currentQuestionIndex === 0;
-  nextQuestionBtn.textContent = currentQuestionIndex === quizQuestions.length - 1 ? "See Results" : "Next";
+  nextQuestionBtn.textContent = isLast ? "See my score" : "Next question";
+
+  if (quizHint) {
+    quizHint.textContent =
+      selectedAnswers[currentQuestionIndex] === null
+        ? "Pick the answer closest to your usual week"
+        : "Change it any time before the end";
+  }
+}
+
+function finishQuiz() {
+  renderResults();
+  showScreen("results");
 }
 
 function quizCompleted() {
@@ -742,6 +772,13 @@ function buildResult() {
   };
 }
 
+// Habit meters follow the semantic risk scale, never a decorative colour.
+function meterTone(score) {
+  if (score >= 80) return "is-low";
+  if (score >= 60) return "is-moderate";
+  return "is-high";
+}
+
 function renderCategoryReport(categoryScores) {
   categoryList.innerHTML = "";
 
@@ -756,7 +793,7 @@ function renderCategoryReport(categoryScores) {
         </div>
       </div>
       <div class="bar-track" aria-hidden="true">
-        <div class="bar-fill" style="--value: ${category.score}%"></div>
+        <div class="bar-fill ${meterTone(category.score)}" style="--value: ${category.score}%"></div>
       </div>
       <p>${category.explanation}</p>
     `;
@@ -779,7 +816,7 @@ function renderEducationCategoryReport(educationScores) {
         </div>
       </div>
       <div class="bar-track" aria-hidden="true">
-        <div class="bar-fill" style="--value: ${category.score}%"></div>
+        <div class="bar-fill ${meterTone(category.score)}" style="--value: ${category.score}%"></div>
       </div>
       <p>${category.explanation}</p>
     `;
@@ -995,6 +1032,11 @@ function renderResults() {
   scoreNumber.textContent = finalResult.score;
   riskLevel.textContent = finalResult.riskLevel;
   riskLevel.className = `risk-pill ${finalResult.riskClassName}`;
+
+  if (scoreRing) {
+    scoreRing.style.setProperty("--score", finalResult.score);
+  }
+
   badgeIcon.textContent = finalResult.badge.icon;
   badgeName.textContent = finalResult.badge.name;
   badgeMessage.textContent = finalResult.badge.message;
@@ -1082,20 +1124,95 @@ function sparklineSvg(scores) {
     <svg class="history-spark" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-hidden="true">
       <defs>
         <linearGradient id="sparkFill" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stop-color="rgba(0,112,253,0.22)" />
-          <stop offset="1" stop-color="rgba(0,209,203,0)" />
+          <stop offset="0" stop-color="rgba(32,80,216,0.22)" />
+          <stop offset="1" stop-color="rgba(35,189,182,0)" />
         </linearGradient>
       </defs>
       <path d="${area}" fill="url(#sparkFill)" />
-      <path d="${line}" fill="none" stroke="#0070fd" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
-      <circle cx="${last[0].toFixed(1)}" cy="${last[1].toFixed(1)}" r="3.6" fill="#0070fd" />
+      <path d="${line}" fill="none" stroke="#2050d8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+      <circle cx="${last[0].toFixed(1)}" cy="${last[1].toFixed(1)}" r="3.6" fill="#2050d8" />
     </svg>`;
+}
+
+// The six most recent checks as a column chart. The row sizes to its content
+// so the value labels never collide with the copy above it.
+function renderHistoryChart(results) {
+  if (!historyColumns || !historyLabels || !historyTiles) return;
+
+  const recent = [...results]
+    .sort((a, b) => new Date(a.completedAt) - new Date(b.completedAt))
+    .slice(-6);
+
+  if (!recent.length) {
+    historyColumns.innerHTML = "";
+    historyLabels.innerHTML = "";
+    historyTiles.innerHTML = "";
+    return;
+  }
+
+  historyColumns.innerHTML = recent
+    .map((result) => {
+      const score = Number(result.score);
+      const tone = score >= 80 ? "is-low" : score >= 60 ? "" : "is-high";
+      return `
+        <div class="col">
+          <span class="col-count">${score}</span>
+          <span class="col-bar ${tone}" style="height: ${Math.round(score * 2.1)}px"></span>
+        </div>
+      `;
+    })
+    .join("");
+
+  historyLabels.innerHTML = recent
+    .map((result) => {
+      const date = new Date(result.completedAt).toLocaleDateString(undefined, {
+        month: "short",
+        day: "numeric",
+      });
+      return `<span>${date}</span>`;
+    })
+    .join("");
+
+  const change = Number(recent[recent.length - 1].score) - Number(recent[0].score);
+  const since = new Date(recent[0].completedAt).toLocaleDateString(undefined, { month: "long" });
+  const steadiest = mostCommon(recent.map((result) => result.strongestHabit && result.strongestHabit.topic));
+  const leakiest = mostCommon(recent.map((result) => result.weakestHabit && result.weakestHabit.topic));
+
+  historyTiles.innerHTML = `
+    <div class="summary-tile accent">
+      <strong>${change > 0 ? "+" : ""}${change}</strong>
+      <span>points since ${since}</span>
+    </div>
+    <div class="summary-tile">
+      <strong>${escapeHtml(steadiest || "-")}</strong>
+      <span>your steadiest habit</span>
+    </div>
+    <div class="summary-tile">
+      <strong>${escapeHtml(leakiest || "-")}</strong>
+      <span>where the points keep going</span>
+    </div>
+  `;
+}
+
+function mostCommon(values) {
+  const counts = new Map();
+  values.filter(Boolean).forEach((value) => counts.set(value, (counts.get(value) || 0) + 1));
+  let best = null;
+  let bestCount = 0;
+  counts.forEach((count, value) => {
+    if (count > bestCount) {
+      best = value;
+      bestCount = count;
+    }
+  });
+  return best;
 }
 
 function renderHistory(results) {
   if (!historyStatus || !historyList) return;
 
   historyList.innerHTML = "";
+  renderHistoryChart(results);
 
   if (!results.length) {
     historyStatus.textContent = "No saved results yet.";
@@ -1729,9 +1846,9 @@ function renderHorizontalChart(container, counts, total) {
 
 function renderRiskDonut(counts, total) {
   const segments = [
-    { label: "Low Risk", value: counts["Low Risk"] || 0, color: "#0e9f6e" },
-    { label: "Moderate Risk", value: counts["Moderate Risk"] || 0, color: "#eab83a" },
-    { label: "High Risk", value: counts["High Risk"] || 0, color: "#e5547d" },
+    { label: "Low Risk", value: counts["Low Risk"] || 0, color: "#23bdb6" },
+    { label: "Moderate Risk", value: counts["Moderate Risk"] || 0, color: "#ffc24d" },
+    { label: "High Risk", value: counts["High Risk"] || 0, color: "#e8456a" },
   ];
 
   let acc = 0;
@@ -1808,8 +1925,8 @@ function renderEngagementTrendChart(results) {
     <svg viewBox="0 0 520 190" role="img" aria-label="Engagement trend line chart">
       <defs>
         <linearGradient id="trendGradient" x1="0" x2="1">
-          <stop offset="0%" stop-color="#1f5fbf" />
-          <stop offset="100%" stop-color="#2bb9a6" />
+          <stop offset="0%" stop-color="#2050d8" />
+          <stop offset="100%" stop-color="#23bdb6" />
         </linearGradient>
       </defs>
       <g class="spark-grid">
@@ -2167,19 +2284,19 @@ function drawWordmark(ctx, cx, y) {
 
   ctx.textAlign = "left";
   ctx.font = `800 52px ${DISPLAY_FONT}`;
-  ctx.fillStyle = "#0070fd";
+  ctx.fillStyle = "#2050d8";
   ctx.fillText("20", x, y);
   x += big;
   ctx.font = `700 28px ${DISPLAY_FONT}`;
-  ctx.fillStyle = "#19b6c2";
+  ctx.fillStyle = "#23bdb6";
   ctx.fillText(" to ", x, y - 4);
   x += mid;
   ctx.font = `800 52px ${DISPLAY_FONT}`;
-  ctx.fillStyle = "#00d1cb";
+  ctx.fillStyle = "#23bdb6";
   ctx.fillText("32", x, y);
 
   // Smile-arrow under the wordmark.
-  ctx.strokeStyle = "#14a6e0";
+  ctx.strokeStyle = "#3d7ce8";
   ctx.lineWidth = 5;
   ctx.lineCap = "round";
   ctx.beginPath();
@@ -2198,9 +2315,9 @@ function drawCertificateCanvas() {
   const H = certCanvas.height;
 
   const bg = ctx.createLinearGradient(0, 0, W, H);
-  bg.addColorStop(0, "#0070fd");
-  bg.addColorStop(0.5, "#14a6e0");
-  bg.addColorStop(1, "#00d1cb");
+  bg.addColorStop(0, "#2050d8");
+  bg.addColorStop(0.5, "#3d7ce8");
+  bg.addColorStop(1, "#23bdb6");
   ctx.fillStyle = bg;
   ctx.fillRect(0, 0, W, H);
 
@@ -2221,40 +2338,40 @@ function drawCertificateCanvas() {
 
   drawWordmark(ctx, W / 2, 156);
 
-  ctx.fillStyle = "#617083";
+  ctx.fillStyle = "#5b6c93";
   ctx.font = `600 22px ${DISPLAY_FONT}`;
   ctx.fillText("CERTIFICATE OF COMPLETION", W / 2, 248);
 
-  ctx.fillStyle = "#102033";
+  ctx.fillStyle = "#142654";
   ctx.font = `800 62px ${DISPLAY_FONT}`;
   ctx.fillText(certName(), W / 2, 318);
 
-  ctx.fillStyle = "#617083";
+  ctx.fillStyle = "#5b6c93";
   ctx.font = "500 25px Inter, sans-serif";
   ctx.fillText("completed the 20 to 32 Smile Check", W / 2, 362);
 
   // Score + badge row.
   ctx.font = `800 88px ${DISPLAY_FONT}`;
   const scoreText = `${finalResult.score}`;
-  ctx.fillStyle = "#0070fd";
+  ctx.fillStyle = "#2050d8";
   const scoreW = ctx.measureText(scoreText).width;
   ctx.font = "700 30px Inter, sans-serif";
   const slashW = ctx.measureText("/100").width;
   const groupStart = W / 2 - (scoreW + slashW) / 2;
   ctx.textAlign = "left";
   ctx.font = `800 88px ${DISPLAY_FONT}`;
-  ctx.fillStyle = "#0070fd";
+  ctx.fillStyle = "#2050d8";
   ctx.fillText(scoreText, groupStart, 478);
   ctx.font = "700 30px Inter, sans-serif";
-  ctx.fillStyle = "#8a97a5";
+  ctx.fillStyle = "#93a3c4";
   ctx.fillText("/100", groupStart + scoreW + 4, 478);
   ctx.textAlign = "center";
 
-  ctx.fillStyle = "#102033";
+  ctx.fillStyle = "#142654";
   ctx.font = "700 30px Inter, sans-serif";
   ctx.fillText(`${finalResult.badge.icon}  ${finalResult.badge.name}`, W / 2, 536);
 
-  ctx.fillStyle = "#7b8a9b";
+  ctx.fillStyle = "#93a3c4";
   ctx.font = "600 21px Inter, sans-serif";
   ctx.fillText(certDateLabel().toUpperCase(), W / 2, 590);
 }
@@ -2271,7 +2388,7 @@ function launchConfetti() {
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
 
-  const colors = ["#0070fd", "#00d1cb", "#eab83a", "#c84b7d", "#5667d8"];
+  const colors = ["#2050d8", "#23bdb6", "#ffc24d", "#f2708f", "#7b61ff"];
   const pieces = Array.from({ length: 130 }, () => ({
     x: Math.random() * canvas.width,
     y: -20 - Math.random() * canvas.height * 0.6,
@@ -2408,8 +2525,29 @@ nextQuestionBtn.addEventListener("click", () => {
     return;
   }
 
-  renderResults();
-  showScreen("results");
+  finishQuiz();
+});
+
+// Home feature cards are navigation too.
+document.querySelectorAll("[data-goto]").forEach((card) => {
+  card.addEventListener("click", () => {
+    const target = card.dataset.goto;
+
+    if (target === "quiz") {
+      currentQuestionIndex = 0;
+      renderQuestion();
+    }
+
+    if (target === "dashboard") {
+      loadHistory();
+    }
+
+    if (target === "myths") {
+      renderMyths();
+    }
+
+    showScreen(target);
+  });
 });
 
 if (viewDashboardBtn) {

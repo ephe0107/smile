@@ -67,7 +67,7 @@ The dashboard labels also identify seeded demo data so it is not mistaken for re
 ## Files
 
 - `index.html` - the page structure and all website sections.
-- `style.css` - the design, colors, layout, responsiveness, and animations.
+- `style.css` - the design system: colour tokens, type scale, radii, shadows, layout, and responsiveness.
 - `script.js` - the quiz, category scoring, visual dashboard, recommendations, achievements, tooth development explorer, progress tracking, admin analytics, myth quiz, and frontend error handling.
 - `server.js` - the backend server and API endpoints.
 - `package.json` - project metadata and start scripts.
@@ -113,6 +113,12 @@ Saved fields:
 - `trend`
 - `completedAt`
 
+## Navigation
+
+The header carries the six main screens: **Home**, **Smile Check**, **My report**, **History**,
+**Analytics**, and **Impact**. The Tooth Explorer, Myth Quiz, oral health team, parent resources,
+and About page are reached from the four cards on the home screen and the footer links.
+
 ## Admin Analytics
 
 Open the **Analytics** link in the top navigation after results have been saved.
@@ -146,7 +152,7 @@ The platform keeps the original youth-focused experience while adding:
 
 ## Tooth Development Explorer
 
-Open the **Teeth** link in the top navigation.
+Open the **Tooth Explorer** card on the home screen, or the footer link of the same name.
 
 The explorer lets users select ages 5 to 18 and shows:
 
