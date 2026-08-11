@@ -1507,7 +1507,6 @@ async function submitComment(event) {
     commentForm.reset();
     commentStatus.textContent = data.message || "Thanks! Your comment is waiting for approval.";
     commentStatus.className = "save-status success";
-    loadPendingComments();
   } catch (error) {
     commentStatus.textContent = `Could not submit comment: ${error.message}`;
     commentStatus.className = "save-status error";
@@ -2509,7 +2508,6 @@ document.querySelectorAll("[data-screen-link]").forEach((link) => {
 
     if (screenId === "admin") {
       loadAnalytics();
-      loadPendingComments();
     }
 
     if (screenId === "impact") {
