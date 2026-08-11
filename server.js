@@ -202,7 +202,7 @@ async function saveResult(request, response) {
     const result = addProgressTrend(normalizedResult, results[0]);
 
     results.unshift(result);
-    writeResults(results.slice(0, 300));
+    writeResults(results.slice(0, 800));
 
     sendJson(response, 201, { result });
   } catch (error) {
@@ -274,7 +274,7 @@ async function saveEngagementAnalytics(request, response) {
     };
 
     analytics.unshift(savedEvent);
-    writeJsonArray(ENGAGEMENT_ANALYTICS_FILE, analytics.slice(0, 1000));
+    writeJsonArray(ENGAGEMENT_ANALYTICS_FILE, analytics.slice(0, 1500));
 
     sendJson(response, 201, { event: savedEvent });
   } catch (error) {

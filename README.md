@@ -50,10 +50,10 @@ node scripts/seed-demo-data.js
 
 This creates:
 
-- 250 realistic seeded demo quiz results
+- 521 realistic seeded demo quiz results
 - Realistic habits, scores, risk levels, recommendations, achievements, reports, and integrated category scores
 - Demo tooth explorer engagement analytics
-- Demo education engagement analytics for learning modules, prevention actions, and quiz interactions
+- 1,011 demo education engagement analytics events for learning modules, prevention actions, and quiz interactions
 
 Seeded records are clearly marked with:
 

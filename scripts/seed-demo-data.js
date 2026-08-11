@@ -14,7 +14,9 @@ const RESULTS_FILE = path.join(DATA_DIR, "results.json");
 const EXPLORER_ANALYTICS_FILE = path.join(DATA_DIR, "tooth-explorer-analytics.json");
 const ENGAGEMENT_ANALYTICS_FILE = path.join(DATA_DIR, "engagement-analytics.json");
 
-const DEMO_COUNT = 250;
+const DEMO_RESULT_COUNT = 521;
+const EXPLORER_ANALYTICS_COUNT = 420;
+const ENGAGEMENT_ANALYTICS_COUNT = 1011;
 const DEMO_SOURCE = "seeded-demo-data";
 
 const categoryInfo = {
@@ -253,7 +255,7 @@ function makeExplorerAnalytics() {
   const toothIds = ["UR6", "UL6", "LR6", "LL6", "UR1", "UL1", "LR1", "LL1", "UR7", "UL7", "LR7", "LL7"];
   const events = [];
 
-  for (let i = 0; i < 420; i += 1) {
+  for (let i = 0; i < EXPLORER_ANALYTICS_COUNT; i += 1) {
     const age = randomInt(5, 18);
     const isLookup = random() < 0.58;
     const toothId = pick(toothIds);
@@ -284,7 +286,7 @@ function makeEngagementAnalytics() {
     caregivers: ["Fluoride education", "Sports mouthguards", "Brushing supervision"],
   };
 
-  return Array.from({ length: 520 }, () => {
+  return Array.from({ length: ENGAGEMENT_ANALYTICS_COUNT }, () => {
     const section = pick(sections);
     const type = section === "myth_quiz"
       ? "myth_quiz_answer"
@@ -310,7 +312,7 @@ function makeEngagementAnalytics() {
 function createDemoData() {
   const results = [];
 
-  for (let i = 0; i < DEMO_COUNT; i += 1) {
+  for (let i = 0; i < DEMO_RESULT_COUNT; i += 1) {
     results.push(makeResult(i, results[0]));
   }
 
@@ -336,41 +338,80 @@ function readJsonArray(filePath) {
   }
 }
 
+function isSeededDemoRecord(item) {
+  return item && (item.isDemo === true || item.source === DEMO_SOURCE);
+}
+
+function sortByNewest(items) {
+  return items.sort((a, b) => {
+    const aDate = new Date(a.completedAt || a.createdAt || 0);
+    const bDate = new Date(b.completedAt || b.createdAt || 0);
+    return bDate - aDate;
+  });
+}
+
+function mixWithRealRecords(existingItems, generatedDemoItems, targetCount) {
+  const realItems = existingItems.filter((item) => !isSeededDemoRecord(item));
+  const demoSlots = Math.max(targetCount - realItems.length, 0);
+  return sortByNewest([...realItems, ...generatedDemoItems.slice(0, demoSlots)]);
+}
+
+function shouldRefreshDemoData(existingItems, targetCount) {
+  const realCount = existingItems.filter((item) => !isSeededDemoRecord(item)).length;
+  const demoCount = existingItems.filter(isSeededDemoRecord).length;
+  const targetDemoCount = Math.max(targetCount - realCount, 0);
+  return existingItems.length !== realCount + targetDemoCount || demoCount !== targetDemoCount;
+}
+
 function seedDemoData({ force = false } = {}) {
   fs.mkdirSync(DATA_DIR, { recursive: true });
 
-  const hasResults = readJsonArray(RESULTS_FILE).length > 0;
-  const hasExplorerAnalytics = readJsonArray(EXPLORER_ANALYTICS_FILE).length > 0;
-  const hasEngagementAnalytics = readJsonArray(ENGAGEMENT_ANALYTICS_FILE).length > 0;
+  const existingResults = readJsonArray(RESULTS_FILE);
+  const existingExplorerAnalytics = readJsonArray(EXPLORER_ANALYTICS_FILE);
+  const existingEngagementAnalytics = readJsonArray(ENGAGEMENT_ANALYTICS_FILE);
+  const shouldUpdateResults = force || shouldRefreshDemoData(existingResults, DEMO_RESULT_COUNT);
+  const shouldUpdateExplorerAnalytics =
+    force || shouldRefreshDemoData(existingExplorerAnalytics, EXPLORER_ANALYTICS_COUNT);
+  const shouldUpdateEngagementAnalytics =
+    force || shouldRefreshDemoData(existingEngagementAnalytics, ENGAGEMENT_ANALYTICS_COUNT);
 
-  if (!force && hasResults && hasExplorerAnalytics && hasEngagementAnalytics) {
+  if (!shouldUpdateResults && !shouldUpdateExplorerAnalytics && !shouldUpdateEngagementAnalytics) {
     return {
       seeded: false,
-      results: hasResults,
-      explorerAnalytics: hasExplorerAnalytics,
-      engagementAnalytics: hasEngagementAnalytics,
+      results: existingResults.length,
+      explorerAnalytics: existingExplorerAnalytics.length,
+      engagementAnalytics: existingEngagementAnalytics.length,
     };
   }
 
   const demoData = createDemoData();
+  const nextResults = shouldUpdateResults
+    ? mixWithRealRecords(existingResults, demoData.results, DEMO_RESULT_COUNT)
+    : existingResults;
+  const nextExplorerAnalytics = shouldUpdateExplorerAnalytics
+    ? mixWithRealRecords(existingExplorerAnalytics, demoData.explorerAnalytics, EXPLORER_ANALYTICS_COUNT)
+    : existingExplorerAnalytics;
+  const nextEngagementAnalytics = shouldUpdateEngagementAnalytics
+    ? mixWithRealRecords(existingEngagementAnalytics, demoData.engagementAnalytics, ENGAGEMENT_ANALYTICS_COUNT)
+    : existingEngagementAnalytics;
 
-  if (force || !hasResults) {
-    fs.writeFileSync(RESULTS_FILE, JSON.stringify(demoData.results, null, 2));
+  if (shouldUpdateResults) {
+    fs.writeFileSync(RESULTS_FILE, JSON.stringify(nextResults, null, 2));
   }
 
-  if (force || !hasExplorerAnalytics) {
-    fs.writeFileSync(EXPLORER_ANALYTICS_FILE, JSON.stringify(demoData.explorerAnalytics, null, 2));
+  if (shouldUpdateExplorerAnalytics) {
+    fs.writeFileSync(EXPLORER_ANALYTICS_FILE, JSON.stringify(nextExplorerAnalytics, null, 2));
   }
 
-  if (force || !hasEngagementAnalytics) {
-    fs.writeFileSync(ENGAGEMENT_ANALYTICS_FILE, JSON.stringify(demoData.engagementAnalytics, null, 2));
+  if (shouldUpdateEngagementAnalytics) {
+    fs.writeFileSync(ENGAGEMENT_ANALYTICS_FILE, JSON.stringify(nextEngagementAnalytics, null, 2));
   }
 
   return {
     seeded: true,
-    results: force || !hasResults ? demoData.results.length : hasResults,
-    explorerAnalytics: force || !hasExplorerAnalytics ? demoData.explorerAnalytics.length : hasExplorerAnalytics,
-    engagementAnalytics: force || !hasEngagementAnalytics ? demoData.engagementAnalytics.length : hasEngagementAnalytics,
+    results: nextResults.length,
+    explorerAnalytics: nextExplorerAnalytics.length,
+    engagementAnalytics: nextEngagementAnalytics.length,
   };
 }
 
