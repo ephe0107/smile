@@ -9,7 +9,7 @@ const path = require("path");
 const crypto = require("crypto");
 
 const ROOT = path.join(__dirname, "..");
-const DATA_DIR = path.join(ROOT, "data");
+const DATA_DIR = process.env.DATA_DIR || path.join(ROOT, "data");
 const RESULTS_FILE = path.join(DATA_DIR, "results.json");
 const EXPLORER_ANALYTICS_FILE = path.join(DATA_DIR, "tooth-explorer-analytics.json");
 const ENGAGEMENT_ANALYTICS_FILE = path.join(DATA_DIR, "engagement-analytics.json");
@@ -307,23 +307,87 @@ function makeEngagementAnalytics() {
   }).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 }
 
-function main() {
-  fs.mkdirSync(DATA_DIR, { recursive: true });
-
+function createDemoData() {
   const results = [];
+
   for (let i = 0; i < DEMO_COUNT; i += 1) {
     results.push(makeResult(i, results[0]));
   }
 
   results.sort((a, b) => new Date(b.completedAt) - new Date(a.completedAt));
-  fs.writeFileSync(RESULTS_FILE, JSON.stringify(results, null, 2));
-  fs.writeFileSync(EXPLORER_ANALYTICS_FILE, JSON.stringify(makeExplorerAnalytics(), null, 2));
-  fs.writeFileSync(ENGAGEMENT_ANALYTICS_FILE, JSON.stringify(makeEngagementAnalytics(), null, 2));
 
-  console.log(`Seeded ${results.length} demo quiz results.`);
-  console.log(`Seeded 420 demo tooth explorer analytics events.`);
-  console.log("Seeded 520 demo education engagement analytics events.");
+  return {
+    results,
+    explorerAnalytics: makeExplorerAnalytics(),
+    engagementAnalytics: makeEngagementAnalytics(),
+  };
+}
+
+function readJsonArray(filePath) {
+  if (!fs.existsSync(filePath)) {
+    return [];
+  }
+
+  try {
+    const items = JSON.parse(fs.readFileSync(filePath, "utf8"));
+    return Array.isArray(items) ? items : [];
+  } catch (error) {
+    return [];
+  }
+}
+
+function seedDemoData({ force = false } = {}) {
+  fs.mkdirSync(DATA_DIR, { recursive: true });
+
+  const hasResults = readJsonArray(RESULTS_FILE).length > 0;
+  const hasExplorerAnalytics = readJsonArray(EXPLORER_ANALYTICS_FILE).length > 0;
+  const hasEngagementAnalytics = readJsonArray(ENGAGEMENT_ANALYTICS_FILE).length > 0;
+
+  if (!force && hasResults && hasExplorerAnalytics && hasEngagementAnalytics) {
+    return {
+      seeded: false,
+      results: hasResults,
+      explorerAnalytics: hasExplorerAnalytics,
+      engagementAnalytics: hasEngagementAnalytics,
+    };
+  }
+
+  const demoData = createDemoData();
+
+  if (force || !hasResults) {
+    fs.writeFileSync(RESULTS_FILE, JSON.stringify(demoData.results, null, 2));
+  }
+
+  if (force || !hasExplorerAnalytics) {
+    fs.writeFileSync(EXPLORER_ANALYTICS_FILE, JSON.stringify(demoData.explorerAnalytics, null, 2));
+  }
+
+  if (force || !hasEngagementAnalytics) {
+    fs.writeFileSync(ENGAGEMENT_ANALYTICS_FILE, JSON.stringify(demoData.engagementAnalytics, null, 2));
+  }
+
+  return {
+    seeded: true,
+    results: force || !hasResults ? demoData.results.length : hasResults,
+    explorerAnalytics: force || !hasExplorerAnalytics ? demoData.explorerAnalytics.length : hasExplorerAnalytics,
+    engagementAnalytics: force || !hasEngagementAnalytics ? demoData.engagementAnalytics.length : hasEngagementAnalytics,
+  };
+}
+
+function main() {
+  const summary = seedDemoData({ force: true });
+
+  console.log(`Seeded ${summary.results} demo quiz results.`);
+  console.log(`Seeded ${summary.explorerAnalytics} demo tooth explorer analytics events.`);
+  console.log(`Seeded ${summary.engagementAnalytics} demo education engagement analytics events.`);
   console.log("Demo data is marked with isDemo: true and source: seeded-demo-data.");
 }
 
-main();
+if (require.main === module) {
+  main();
+}
+
+module.exports = {
+  createDemoData,
+  seedDemoData,
+};

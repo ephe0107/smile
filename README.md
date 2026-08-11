@@ -183,6 +183,12 @@ DATA_DIR=/var/data
 
 Set an `ADMIN_PIN` environment variable on Render. That PIN is required before pending comments can be approved or rejected.
 
+The hosted backend automatically seeds empty analytics storage with clearly marked demo records. To turn seeded demo data off later, set:
+
+```text
+SEED_DEMO_DATA=false
+```
+
 ## Educational Note
 
 This project is for preventive oral health education only. It does not diagnose dental problems or replace advice from a dentist or other health professional.

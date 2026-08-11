@@ -7,12 +7,14 @@ const http = require("http");
 const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
+const { seedDemoData } = require("./scripts/seed-demo-data");
 
 const PORT = process.env.PORT || 3000;
 const HOST = process.env.HOST || "0.0.0.0";
 const ROOT = __dirname;
 const DATA_DIR = process.env.DATA_DIR || path.join(ROOT, "data");
 const ADMIN_PIN = process.env.ADMIN_PIN || "";
+const SHOULD_SEED_DEMO_DATA = process.env.SEED_DEMO_DATA !== "false";
 const RESULTS_FILE = path.join(DATA_DIR, "results.json");
 const EXPLORER_ANALYTICS_FILE = path.join(DATA_DIR, "tooth-explorer-analytics.json");
 const ENGAGEMENT_ANALYTICS_FILE = path.join(DATA_DIR, "engagement-analytics.json");
@@ -493,6 +495,22 @@ server.on("error", (error) => {
   console.error(`Server could not start: ${error.message}`);
   process.exit(1);
 });
+
+if (SHOULD_SEED_DEMO_DATA) {
+  try {
+    const seedSummary = seedDemoData();
+
+    if (seedSummary.seeded) {
+      console.log(
+        `Seeded demo analytics data: ${seedSummary.results} results, ` +
+          `${seedSummary.explorerAnalytics} explorer events, ` +
+          `${seedSummary.engagementAnalytics} engagement events.`
+      );
+    }
+  } catch (error) {
+    console.warn(`Demo data could not be seeded: ${error.message}`);
+  }
+}
 
 server.listen(PORT, HOST, () => {
   console.log(`20 to 32 Smile Check is running at http://localhost:${PORT}`);
