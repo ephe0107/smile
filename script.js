@@ -7,6 +7,7 @@
 const RESULTS_API = "/results";
 const EXPLORER_ANALYTICS_API = "/explorer-analytics";
 const ENGAGEMENT_ANALYTICS_API = "/engagement-analytics";
+const COMMENTS_API = "/comments";
 
 // Category explanations turn the score into education, not just a number.
 const categoryInfo = {
@@ -444,12 +445,23 @@ const accessResult = document.querySelector("#accessResult");
 const teamGrid = document.querySelector("#teamGrid");
 const teamDetail = document.querySelector("#teamDetail");
 const caregiverResources = document.querySelector("#caregiverResources");
+const commentForm = document.querySelector("#commentForm");
+const commentName = document.querySelector("#commentName");
+const commentText = document.querySelector("#commentText");
+const commentStatus = document.querySelector("#commentStatus");
+const approvedComments = document.querySelector("#approvedComments");
+const refreshCommentsBtn = document.querySelector("#refreshCommentsBtn");
+const moderationStatus = document.querySelector("#moderationStatus");
+const pendingComments = document.querySelector("#pendingComments");
 const analyticsStatus = document.querySelector("#analyticsStatus");
 const refreshAnalyticsBtn = document.querySelector("#refreshAnalyticsBtn");
 const metricGrid = document.querySelector("#metricGrid");
 const scoreDistributionChart = document.querySelector("#scoreDistributionChart");
 const riskDistributionChart = document.querySelector("#riskDistributionChart");
 const issueChart = document.querySelector("#issueChart");
+const engagementTrendChart = document.querySelector("#engagementTrendChart");
+const preventionMixChart = document.querySelector("#preventionMixChart");
+const learningReadinessChart = document.querySelector("#learningReadinessChart");
 const impactHeadline = document.querySelector("#impactHeadline");
 const impactSummary = document.querySelector("#impactSummary");
 const impactMetricsStatus = document.querySelector("#impactMetricsStatus");
@@ -1005,6 +1017,8 @@ function renderResults() {
 }
 
 async function loadHistory() {
+  if (!historyStatus || !historyList || !refreshHistoryBtn) return;
+
   historyStatus.textContent = "Loading saved results...";
   historyList.innerHTML = "";
   refreshHistoryBtn.disabled = true;
@@ -1079,6 +1093,8 @@ function sparklineSvg(scores) {
 }
 
 function renderHistory(results) {
+  if (!historyStatus || !historyList) return;
+
   historyList.innerHTML = "";
 
   if (!results.length) {
@@ -1339,6 +1355,8 @@ function saveAgeLookup() {
 }
 
 function renderAccessAssessment() {
+  if (!accessQuestions || !accessResult) return;
+
   const answers = {};
   accessQuestions.innerHTML = "";
 
@@ -1430,6 +1448,143 @@ function renderCaregiverResources() {
     caregiverResources.appendChild(card);
   });
   connectEvidenceToggle(caregiverResources);
+}
+
+function renderApprovedComments(comments) {
+  if (!approvedComments) return;
+
+  if (!comments.length) {
+    approvedComments.innerHTML = `<div class="empty-history">Approved comments will appear here.</div>`;
+    return;
+  }
+
+  approvedComments.innerHTML = comments
+    .map(
+      (comment) => `
+        <article class="public-comment-card">
+          <p>"${escapeHtml(comment.comment)}"</p>
+          <strong>${escapeHtml(comment.name)}</strong>
+        </article>
+      `
+    )
+    .join("");
+}
+
+async function loadApprovedComments() {
+  if (!approvedComments) return;
+
+  try {
+    const data = await fetchJsonApi(COMMENTS_API, "Comments");
+    renderApprovedComments(data.comments || []);
+  } catch (error) {
+    approvedComments.innerHTML = `<div class="empty-history">Start the backend to load approved comments.</div>`;
+  }
+}
+
+async function submitComment(event) {
+  event.preventDefault();
+
+  if (!commentForm || !commentName || !commentText || !commentStatus) return;
+
+  commentStatus.textContent = "Submitting for review...";
+  commentStatus.className = "save-status";
+
+  try {
+    const response = await fetch(COMMENTS_API, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: commentName.value,
+        comment: commentText.value,
+      }),
+    });
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || "Comment could not be submitted.");
+    }
+
+    commentForm.reset();
+    commentStatus.textContent = data.message || "Thanks! Your comment is waiting for approval.";
+    commentStatus.className = "save-status success";
+    loadPendingComments();
+  } catch (error) {
+    commentStatus.textContent = `Could not submit comment: ${error.message}`;
+    commentStatus.className = "save-status error";
+  }
+}
+
+function renderPendingComments(comments) {
+  if (!pendingComments || !moderationStatus) return;
+
+  moderationStatus.textContent = comments.length
+    ? `${comments.length} comment${comments.length === 1 ? "" : "s"} waiting for approval.`
+    : "No comments waiting for approval.";
+
+  if (!comments.length) {
+    pendingComments.innerHTML = `<div class="empty-history">No pending comments right now.</div>`;
+    return;
+  }
+
+  pendingComments.innerHTML = comments
+    .map(
+      (comment) => `
+        <article class="pending-comment-card" data-comment-id="${escapeHtml(comment.id)}">
+          <div>
+            <strong>${escapeHtml(comment.name)}</strong>
+            <p>"${escapeHtml(comment.comment)}"</p>
+          </div>
+          <div class="pending-comment-actions">
+            <button class="btn btn-primary" type="button" data-action="approve">Approve</button>
+            <button class="btn btn-soft" type="button" data-action="reject">Reject</button>
+          </div>
+        </article>
+      `
+    )
+    .join("");
+
+  pendingComments.querySelectorAll("button").forEach((button) => {
+    button.addEventListener("click", () => {
+      const card = button.closest("[data-comment-id]");
+      moderateComment(card.dataset.commentId, button.dataset.action);
+    });
+  });
+}
+
+async function loadPendingComments() {
+  if (!pendingComments || !moderationStatus) return;
+
+  moderationStatus.textContent = "Loading pending comments...";
+
+  try {
+    const data = await fetchJsonApi(`${COMMENTS_API}/pending`, "Pending comments");
+    renderPendingComments(data.comments || []);
+  } catch (error) {
+    moderationStatus.textContent = `Could not load comments: ${error.message}`;
+    pendingComments.innerHTML = `<div class="empty-history">Start the backend to moderate comments.</div>`;
+  }
+}
+
+async function moderateComment(id, action) {
+  if (!id || !action) return;
+
+  try {
+    const response = await fetch(`${COMMENTS_API}/moderate`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, action }),
+    });
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || "Comment could not be moderated.");
+    }
+
+    await loadPendingComments();
+    await loadApprovedComments();
+  } catch (error) {
+    moderationStatus.textContent = `Could not update comment: ${error.message}`;
+  }
 }
 
 function percent(part, total) {
@@ -1597,6 +1752,107 @@ function renderColumnChart(container, counts, total) {
   `;
 }
 
+function renderEngagementTrendChart(results) {
+  const sortedScores = [...results]
+    .sort((a, b) => new Date(a.completedAt) - new Date(b.completedAt))
+    .slice(-8)
+    .map((result) => Number(result.score));
+  const scores = sortedScores.length ? sortedScores : [62, 66, 70, 68, 74, 78, 82, 86];
+  const points = scores.map((score, index) => {
+    const x = scores.length === 1 ? 260 : 24 + index * (472 / (scores.length - 1));
+    const y = 164 - (score / 100) * 124;
+    return `${x},${y}`;
+  });
+  const latest = scores[scores.length - 1];
+  const previous = scores.length > 1 ? scores[scores.length - 2] : latest;
+  const change = latest - previous;
+
+  engagementTrendChart.innerHTML = `
+    <svg viewBox="0 0 520 190" role="img" aria-label="Engagement trend line chart">
+      <defs>
+        <linearGradient id="trendGradient" x1="0" x2="1">
+          <stop offset="0%" stop-color="#1f5fbf" />
+          <stop offset="100%" stop-color="#2bb9a6" />
+        </linearGradient>
+      </defs>
+      <g class="spark-grid">
+        <line x1="24" y1="40" x2="496" y2="40" />
+        <line x1="24" y1="102" x2="496" y2="102" />
+        <line x1="24" y1="164" x2="496" y2="164" />
+      </g>
+      <polyline points="${points.join(" ")}" />
+      ${scores
+        .map((score, index) => {
+          const [x, y] = points[index].split(",");
+          return `<circle cx="${x}" cy="${y}" r="5"><title>${score}/100</title></circle>`;
+        })
+        .join("")}
+    </svg>
+    <div class="chart-callout">
+      <strong>${latest}/100</strong>
+      <span>${change >= 0 ? "+" : ""}${change} from previous saved result</span>
+    </div>
+  `;
+}
+
+function renderPreventionMixChart(weaknessCounts, total) {
+  const entries = Object.entries(weaknessCounts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 4);
+
+  preventionMixChart.innerHTML = `
+    <div class="stacked-bar" role="img" aria-label="Prevention focus stacked chart">
+      ${entries
+        .map(([label, count], index) => `<span class="stack-segment segment-${index + 1}" style="--w: ${Math.max(percent(count, total), 8)}%"><i>${label}</i></span>`)
+        .join("")}
+    </div>
+    <div class="stacked-list">
+      ${entries
+        .map(([label, count], index) => `
+          <div>
+            <span><i class="segment-${index + 1}"></i>${label}</span>
+            <strong>${percent(count, total)}%</strong>
+          </div>
+        `)
+        .join("")}
+    </div>
+  `;
+}
+
+function renderLearningReadinessChart(results) {
+  const categories = ["brushing", "flossing", "diet", "fluoride", "care"];
+  const labels = ["Hygiene", "Flossing", "Diet", "Fluoride", "Care"];
+  const averages = categories.map((category) => {
+    const values = results
+      .map((result) => result.categoryScores?.[category]?.score)
+      .filter((score) => Number.isFinite(Number(score)))
+      .map(Number);
+    return values.length ? Math.round(values.reduce((sum, score) => sum + score, 0) / values.length) : 60;
+  });
+  const polygon = averages.map((score, index) => {
+    const angle = -Math.PI / 2 + index * ((Math.PI * 2) / averages.length);
+    const radius = 18 + (score / 100) * 62;
+    return `${100 + Math.cos(angle) * radius},${100 + Math.sin(angle) * radius}`;
+  });
+
+  learningReadinessChart.innerHTML = `
+    <svg class="radar-chart" viewBox="0 0 200 200" role="img" aria-label="Learning readiness radar chart">
+      <polygon class="radar-ring" points="100,20 176,75 147,165 53,165 24,75" />
+      <polygon class="radar-ring inner" points="100,55 143,86 126,136 74,136 57,86" />
+      <polygon class="radar-shape" points="${polygon.join(" ")}" />
+      ${labels
+        .map((label, index) => {
+          const angle = -Math.PI / 2 + index * ((Math.PI * 2) / labels.length);
+          return `<text x="${100 + Math.cos(angle) * 88}" y="${104 + Math.sin(angle) * 88}">${label}</text>`;
+        })
+        .join("")}
+    </svg>
+    <div class="radar-score-list">
+      ${labels.map((label, index) => `<span>${label}<strong>${averages[index]}%</strong></span>`).join("")}
+    </div>
+  `;
+}
+
 function getEngagementSummary(engagement = []) {
   const events = Array.isArray(engagement) ? engagement : [];
   const mythAnswers = events.filter((event) => event.type === "myth_quiz_answer");
@@ -1633,6 +1889,9 @@ function renderAnalytics(results, engagement = []) {
     scoreDistributionChart.innerHTML = `<div class="empty-history">Complete quizzes to populate score distribution.</div>`;
     riskDistributionChart.innerHTML = `<div class="empty-history">Risk distribution will appear after results are saved.</div>`;
     issueChart.innerHTML = `<div class="empty-history">Common oral health issues will appear here.</div>`;
+    engagementTrendChart.innerHTML = `<div class="empty-history">Demo trend chart will appear after results load.</div>`;
+    preventionMixChart.innerHTML = `<div class="empty-history">Demo prevention mix will appear after results load.</div>`;
+    learningReadinessChart.innerHTML = `<div class="empty-history">Demo readiness chart will appear after results load.</div>`;
     impactHeadline.textContent = "No population data yet";
     impactSummary.textContent = "Once youth complete the quiz, this dashboard will reveal education gaps and prevention priorities.";
     return;
@@ -1663,6 +1922,9 @@ function renderAnalytics(results, engagement = []) {
   renderColumnChart(scoreDistributionChart, getScoreDistribution(results), total);
   renderRiskDonut(riskCounts, total);
   renderHorizontalChart(issueChart, weaknessCounts, total);
+  renderEngagementTrendChart(results);
+  renderPreventionMixChart(weaknessCounts, total);
+  renderLearningReadinessChart(results);
 
   impactHeadline.textContent = `${commonWeakness.label} is the clearest education gap`;
   impactSummary.textContent =
@@ -1676,6 +1938,9 @@ async function loadAnalytics() {
   scoreDistributionChart.innerHTML = "";
   riskDistributionChart.innerHTML = "";
   issueChart.innerHTML = "";
+  engagementTrendChart.innerHTML = "";
+  preventionMixChart.innerHTML = "";
+  learningReadinessChart.innerHTML = "";
   refreshAnalyticsBtn.disabled = true;
 
   try {
@@ -1690,6 +1955,9 @@ async function loadAnalytics() {
     scoreDistributionChart.innerHTML = `<div class="empty-history">Start the backend to calculate analytics.</div>`;
     riskDistributionChart.innerHTML = `<div class="empty-history">Risk data is unavailable right now.</div>`;
     issueChart.innerHTML = `<div class="empty-history">Issue data is unavailable right now.</div>`;
+    engagementTrendChart.innerHTML = `<div class="empty-history">Trend chart needs backend data.</div>`;
+    preventionMixChart.innerHTML = `<div class="empty-history">Prevention mix needs backend data.</div>`;
+    learningReadinessChart.innerHTML = `<div class="empty-history">Readiness chart needs backend data.</div>`;
     impactHeadline.textContent = "Analytics unavailable";
     impactSummary.textContent = "The admin dashboard uses saved backend results, so the backend must be running.";
   } finally {
@@ -2109,10 +2377,12 @@ nextQuestionBtn.addEventListener("click", () => {
   showScreen("results");
 });
 
-viewDashboardBtn.addEventListener("click", () => {
-  loadHistory();
-  showScreen("dashboard");
-});
+if (viewDashboardBtn) {
+  viewDashboardBtn.addEventListener("click", () => {
+    loadHistory();
+    showScreen("dashboard");
+  });
+}
 
 goToMythsBtn.addEventListener("click", () => {
   renderMyths();
@@ -2125,11 +2395,21 @@ retakeQuizBtn.addEventListener("click", () => {
   showScreen("quiz");
 });
 
-refreshHistoryBtn.addEventListener("click", loadHistory);
+if (refreshHistoryBtn) {
+  refreshHistoryBtn.addEventListener("click", loadHistory);
+}
 
 refreshAnalyticsBtn.addEventListener("click", loadAnalytics);
 
 refreshImpactBtn.addEventListener("click", loadImpactMetrics);
+
+if (commentForm) {
+  commentForm.addEventListener("submit", submitComment);
+}
+
+if (refreshCommentsBtn) {
+  refreshCommentsBtn.addEventListener("click", loadPendingComments);
+}
 
 ageSlider.addEventListener("input", () => {
   renderExplorer(Number(ageSlider.value));
@@ -2137,11 +2417,13 @@ ageSlider.addEventListener("input", () => {
 
 ageSlider.addEventListener("change", saveAgeLookup);
 
-dashboardRetakeBtn.addEventListener("click", () => {
-  currentQuestionIndex = 0;
-  renderQuestion();
-  showScreen("quiz");
-});
+if (dashboardRetakeBtn) {
+  dashboardRetakeBtn.addEventListener("click", () => {
+    currentQuestionIndex = 0;
+    renderQuestion();
+    showScreen("quiz");
+  });
+}
 
 certificateBtn.addEventListener("click", () => {
   // You can't certify a score you don't have — send first-timers to the quiz.
@@ -2188,15 +2470,11 @@ document.querySelectorAll("[data-screen-link]").forEach((link) => {
 
     if (screenId === "admin") {
       loadAnalytics();
+      loadPendingComments();
     }
 
     if (screenId === "impact") {
       loadImpactMetrics();
-    }
-
-    if (screenId === "access") {
-      renderAccessAssessment();
-      trackEngagement({ type: "module_open", section: "access", detail: "Oral Health Access Assessment" });
     }
 
     if (screenId === "team") {
@@ -2222,3 +2500,4 @@ renderExplorer(Number(ageSlider.value));
 renderAccessAssessment();
 renderOralHealthTeam();
 renderCaregiverResources();
+loadApprovedComments();
