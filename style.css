@@ -2449,6 +2449,86 @@ button:disabled {
   font-weight: 600;
 }
 
+.comment-section {
+  margin-top: 34px;
+  padding-top: 28px;
+  border-top: 1px solid var(--line);
+}
+
+.comment-form {
+  display: grid;
+  gap: 14px;
+  max-width: 760px;
+}
+
+.comment-form label {
+  display: grid;
+  gap: 8px;
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.comment-form input,
+.comment-form textarea {
+  width: 100%;
+  padding: 13px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: #ffffff;
+  color: var(--ink);
+  resize: vertical;
+}
+
+.approved-comments {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 20px;
+}
+
+.public-comment-card,
+.pending-comment-card {
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: linear-gradient(180deg, #ffffff, #f8fbfd);
+}
+
+.public-comment-card p,
+.pending-comment-card p {
+  color: var(--muted);
+  font-weight: 650;
+}
+
+.public-comment-card strong,
+.pending-comment-card strong {
+  display: block;
+  margin-top: 10px;
+}
+
+.moderation-card {
+  margin-top: 18px;
+}
+
+.pending-comments {
+  display: grid;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.pending-comment-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.pending-comment-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
 .site-footer {
   padding: 28px 16px 42px;
   color: var(--muted);
@@ -2524,7 +2604,8 @@ button:disabled {
   .demo-chart-grid,
   .metric-grid,
   .about-grid,
-  .doctor-grid {
+  .doctor-grid,
+  .approved-comments {
     grid-template-columns: 1fr;
   }
 
@@ -2593,6 +2674,7 @@ button:disabled {
   .dashboard-summary,
   .report-heading,
   .dashboard-topline,
+  .pending-comment-card,
   .history-card {
     flex-direction: column;
   }
@@ -2611,7 +2693,9 @@ button:disabled {
 
   .btn,
   .quiz-actions .btn,
-  .myth-actions .btn {
+  .myth-actions .btn,
+  .pending-comment-actions,
+  .pending-comment-actions .btn {
     width: 100%;
   }
 

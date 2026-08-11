@@ -15,6 +15,7 @@ const DATA_DIR = path.join(ROOT, "data");
 const RESULTS_FILE = path.join(DATA_DIR, "results.json");
 const EXPLORER_ANALYTICS_FILE = path.join(DATA_DIR, "tooth-explorer-analytics.json");
 const ENGAGEMENT_ANALYTICS_FILE = path.join(DATA_DIR, "engagement-analytics.json");
+const COMMENTS_FILE = path.join(DATA_DIR, "comments.json");
 
 // These content types help the browser understand each file.
 const contentTypes = {
@@ -271,6 +272,111 @@ function getEngagementAnalytics(response) {
   }
 }
 
+function cleanText(value, maxLength) {
+  return String(value || "").replace(/\s+/g, " ").trim().slice(0, maxLength);
+}
+
+function publicComment(comment) {
+  return {
+    id: comment.id,
+    name: comment.name,
+    comment: comment.comment,
+    createdAt: comment.createdAt,
+  };
+}
+
+function getApprovedComments(response) {
+  try {
+    const comments = readJsonArray(COMMENTS_FILE)
+      .filter((comment) => comment.status === "approved")
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+      .slice(0, 12)
+      .map(publicComment);
+
+    sendJson(response, 200, { comments });
+  } catch (error) {
+    sendJson(response, 500, { error: "Comments could not be loaded." });
+  }
+}
+
+function getPendingComments(response) {
+  try {
+    const comments = readJsonArray(COMMENTS_FILE)
+      .filter((comment) => comment.status === "pending")
+      .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
+      .slice(0, 50);
+
+    sendJson(response, 200, { comments });
+  } catch (error) {
+    sendJson(response, 500, { error: "Pending comments could not be loaded." });
+  }
+}
+
+async function saveComment(request, response) {
+  try {
+    const body = await readRequestBody(request);
+    const input = JSON.parse(body);
+    const name = cleanText(input.name, 40);
+    const comment = cleanText(input.comment, 280);
+
+    if (name.length < 2) {
+      throw new Error("Please add a name or initials.");
+    }
+
+    if (comment.length < 10) {
+      throw new Error("Please write a comment of at least 10 characters.");
+    }
+
+    const comments = readJsonArray(COMMENTS_FILE);
+    const savedComment = {
+      id: crypto.randomUUID(),
+      name,
+      comment,
+      status: "pending",
+      createdAt: new Date().toISOString(),
+      reviewedAt: null,
+    };
+
+    comments.unshift(savedComment);
+    writeJsonArray(COMMENTS_FILE, comments.slice(0, 300));
+
+    sendJson(response, 201, {
+      comment: publicComment(savedComment),
+      message: "Thanks! Your comment was submitted for review.",
+    });
+  } catch (error) {
+    sendJson(response, 400, { error: error.message || "Comment could not be submitted." });
+  }
+}
+
+async function moderateComment(request, response) {
+  try {
+    const body = await readRequestBody(request);
+    const input = JSON.parse(body);
+    const id = String(input.id || "").trim();
+    const action = String(input.action || "").trim();
+
+    if (!id || !["approve", "reject"].includes(action)) {
+      throw new Error("A comment id and approve/reject action are required.");
+    }
+
+    const comments = readJsonArray(COMMENTS_FILE);
+    const comment = comments.find((item) => item.id === id);
+
+    if (!comment) {
+      throw new Error("Comment was not found.");
+    }
+
+    comment.status = action === "approve" ? "approved" : "rejected";
+    comment.reviewedAt = new Date().toISOString();
+    writeJsonArray(COMMENTS_FILE, comments);
+
+    sendJson(response, 200, { comment, message: `Comment ${comment.status}.` });
+  } catch (error) {
+    sendJson(response, 400, { error: error.message || "Comment could not be moderated." });
+  }
+}
+
 function serveFile(request, response) {
   const requestPath = request.url === "/" ? "/index.html" : request.url.split("?")[0];
   const decodedPath = decodeURIComponent(requestPath);
@@ -327,6 +433,26 @@ const server = http.createServer((request, response) => {
 
   if (request.url === "/engagement-analytics" && request.method === "GET") {
     getEngagementAnalytics(response);
+    return;
+  }
+
+  if (request.url === "/comments" && request.method === "GET") {
+    getApprovedComments(response);
+    return;
+  }
+
+  if (request.url === "/comments" && request.method === "POST") {
+    saveComment(request, response);
+    return;
+  }
+
+  if (request.url === "/comments/pending" && request.method === "GET") {
+    getPendingComments(response);
+    return;
+  }
+
+  if (request.url === "/comments/moderate" && request.method === "POST") {
+    moderateComment(request, response);
     return;
   }
 

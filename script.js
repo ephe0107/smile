@@ -7,6 +7,7 @@
 const RESULTS_API = "/results";
 const EXPLORER_ANALYTICS_API = "/explorer-analytics";
 const ENGAGEMENT_ANALYTICS_API = "/engagement-analytics";
+const COMMENTS_API = "/comments";
 
 // Category explanations turn the score into education, not just a number.
 const categoryInfo = {
@@ -444,6 +445,14 @@ const accessResult = document.querySelector("#accessResult");
 const teamGrid = document.querySelector("#teamGrid");
 const teamDetail = document.querySelector("#teamDetail");
 const caregiverResources = document.querySelector("#caregiverResources");
+const commentForm = document.querySelector("#commentForm");
+const commentName = document.querySelector("#commentName");
+const commentText = document.querySelector("#commentText");
+const commentStatus = document.querySelector("#commentStatus");
+const approvedComments = document.querySelector("#approvedComments");
+const refreshCommentsBtn = document.querySelector("#refreshCommentsBtn");
+const moderationStatus = document.querySelector("#moderationStatus");
+const pendingComments = document.querySelector("#pendingComments");
 const analyticsStatus = document.querySelector("#analyticsStatus");
 const refreshAnalyticsBtn = document.querySelector("#refreshAnalyticsBtn");
 const metricGrid = document.querySelector("#metricGrid");
@@ -1441,6 +1450,143 @@ function renderCaregiverResources() {
   connectEvidenceToggle(caregiverResources);
 }
 
+function renderApprovedComments(comments) {
+  if (!approvedComments) return;
+
+  if (!comments.length) {
+    approvedComments.innerHTML = `<div class="empty-history">Approved comments will appear here.</div>`;
+    return;
+  }
+
+  approvedComments.innerHTML = comments
+    .map(
+      (comment) => `
+        <article class="public-comment-card">
+          <p>"${escapeHtml(comment.comment)}"</p>
+          <strong>${escapeHtml(comment.name)}</strong>
+        </article>
+      `
+    )
+    .join("");
+}
+
+async function loadApprovedComments() {
+  if (!approvedComments) return;
+
+  try {
+    const data = await fetchJsonApi(COMMENTS_API, "Comments");
+    renderApprovedComments(data.comments || []);
+  } catch (error) {
+    approvedComments.innerHTML = `<div class="empty-history">Start the backend to load approved comments.</div>`;
+  }
+}
+
+async function submitComment(event) {
+  event.preventDefault();
+
+  if (!commentForm || !commentName || !commentText || !commentStatus) return;
+
+  commentStatus.textContent = "Submitting for review...";
+  commentStatus.className = "save-status";
+
+  try {
+    const response = await fetch(COMMENTS_API, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: commentName.value,
+        comment: commentText.value,
+      }),
+    });
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || "Comment could not be submitted.");
+    }
+
+    commentForm.reset();
+    commentStatus.textContent = data.message || "Thanks! Your comment is waiting for approval.";
+    commentStatus.className = "save-status success";
+    loadPendingComments();
+  } catch (error) {
+    commentStatus.textContent = `Could not submit comment: ${error.message}`;
+    commentStatus.className = "save-status error";
+  }
+}
+
+function renderPendingComments(comments) {
+  if (!pendingComments || !moderationStatus) return;
+
+  moderationStatus.textContent = comments.length
+    ? `${comments.length} comment${comments.length === 1 ? "" : "s"} waiting for approval.`
+    : "No comments waiting for approval.";
+
+  if (!comments.length) {
+    pendingComments.innerHTML = `<div class="empty-history">No pending comments right now.</div>`;
+    return;
+  }
+
+  pendingComments.innerHTML = comments
+    .map(
+      (comment) => `
+        <article class="pending-comment-card" data-comment-id="${escapeHtml(comment.id)}">
+          <div>
+            <strong>${escapeHtml(comment.name)}</strong>
+            <p>"${escapeHtml(comment.comment)}"</p>
+          </div>
+          <div class="pending-comment-actions">
+            <button class="btn btn-primary" type="button" data-action="approve">Approve</button>
+            <button class="btn btn-soft" type="button" data-action="reject">Reject</button>
+          </div>
+        </article>
+      `
+    )
+    .join("");
+
+  pendingComments.querySelectorAll("button").forEach((button) => {
+    button.addEventListener("click", () => {
+      const card = button.closest("[data-comment-id]");
+      moderateComment(card.dataset.commentId, button.dataset.action);
+    });
+  });
+}
+
+async function loadPendingComments() {
+  if (!pendingComments || !moderationStatus) return;
+
+  moderationStatus.textContent = "Loading pending comments...";
+
+  try {
+    const data = await fetchJsonApi(`${COMMENTS_API}/pending`, "Pending comments");
+    renderPendingComments(data.comments || []);
+  } catch (error) {
+    moderationStatus.textContent = `Could not load comments: ${error.message}`;
+    pendingComments.innerHTML = `<div class="empty-history">Start the backend to moderate comments.</div>`;
+  }
+}
+
+async function moderateComment(id, action) {
+  if (!id || !action) return;
+
+  try {
+    const response = await fetch(`${COMMENTS_API}/moderate`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, action }),
+    });
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || "Comment could not be moderated.");
+    }
+
+    await loadPendingComments();
+    await loadApprovedComments();
+  } catch (error) {
+    moderationStatus.textContent = `Could not update comment: ${error.message}`;
+  }
+}
+
 function percent(part, total) {
   if (!total) {
     return 0;
@@ -2257,6 +2403,14 @@ refreshAnalyticsBtn.addEventListener("click", loadAnalytics);
 
 refreshImpactBtn.addEventListener("click", loadImpactMetrics);
 
+if (commentForm) {
+  commentForm.addEventListener("submit", submitComment);
+}
+
+if (refreshCommentsBtn) {
+  refreshCommentsBtn.addEventListener("click", loadPendingComments);
+}
+
 ageSlider.addEventListener("input", () => {
   renderExplorer(Number(ageSlider.value));
 });
@@ -2316,6 +2470,7 @@ document.querySelectorAll("[data-screen-link]").forEach((link) => {
 
     if (screenId === "admin") {
       loadAnalytics();
+      loadPendingComments();
     }
 
     if (screenId === "impact") {
@@ -2345,3 +2500,4 @@ renderExplorer(Number(ageSlider.value));
 renderAccessAssessment();
 renderOralHealthTeam();
 renderCaregiverResources();
+loadApprovedComments();

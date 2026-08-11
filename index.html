@@ -439,6 +439,18 @@
             Complete quizzes to generate public-health-style insights.
           </p>
         </article>
+
+        <article class="analytics-card wide moderation-card">
+          <div class="dashboard-topline">
+            <div>
+              <span class="result-label">Comment moderation</span>
+              <h3>Pending website comments</h3>
+              <p id="moderationStatus">Submitted comments will appear here before they are public.</p>
+            </div>
+            <button class="btn btn-soft" id="refreshCommentsBtn" type="button">Refresh Comments</button>
+          </div>
+          <div class="pending-comments" id="pendingComments"></div>
+        </article>
       </div>
     </section>
 
@@ -670,6 +682,29 @@
               </div>
             </article>
           </div>
+        </div>
+
+        <div class="comment-section">
+          <div class="section-heading compact-heading">
+            <p class="eyebrow">Community comments</p>
+            <h3>Share a note about the platform</h3>
+            <p>Comments are reviewed first and only appear publicly after approval.</p>
+          </div>
+
+          <form class="comment-form" id="commentForm">
+            <label>
+              Name or initials
+              <input id="commentName" name="name" type="text" maxlength="40" placeholder="e.g. Ethan H." required />
+            </label>
+            <label>
+              Comment
+              <textarea id="commentText" name="comment" maxlength="280" rows="4" placeholder="What did you or your family find helpful?" required></textarea>
+            </label>
+            <button class="btn btn-primary" type="submit">Submit for approval</button>
+            <p class="save-status" id="commentStatus" role="status"></p>
+          </form>
+
+          <div class="approved-comments" id="approvedComments" aria-live="polite"></div>
         </div>
       </div>
     </section>
