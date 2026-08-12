@@ -1907,7 +1907,7 @@ function renderColumnChart(container, counts, total) {
 }
 
 function getPopulationPerformanceTrend(results, engagement = []) {
-  const monthLabels = ["Mar", "Apr", "May", "Jun", "Jul", "Aug"];
+  const monthLabels = ["Jun", "Jul", "Aug"];
 
   // Aggregate projection for the whole platform: realistic improvement as education exposure increases.
   return monthLabels.map((month, index) => {
