@@ -472,6 +472,11 @@ const impactSummary = document.querySelector("#impactSummary");
 const impactMetricsStatus = document.querySelector("#impactMetricsStatus");
 const refreshImpactBtn = document.querySelector("#refreshImpactBtn");
 const impactMetricsGrid = document.querySelector("#impactMetricsGrid");
+const mythAchievementCard = document.querySelector("#mythAchievementCard");
+const mythAchievementIcon = document.querySelector("#mythAchievementIcon");
+const mythAchievementTitle = document.querySelector("#mythAchievementTitle");
+const mythAchievementText = document.querySelector("#mythAchievementText");
+const mythScorePill = document.querySelector("#mythScorePill");
 const mythList = document.querySelector("#mythList");
 const certificateBtn = document.querySelector("#certificateBtn");
 const certificateBadge = document.querySelector("#certificateBadge");
@@ -2266,8 +2271,74 @@ async function loadImpactMetrics() {
   }
 }
 
+let mythQuizAnswers = Array(myths.length).fill(null);
+
+function getMythQuizAchievement(scorePercent) {
+  if (scorePercent === 100) {
+    return {
+      icon: "🧠",
+      title: "Myth Master",
+      text: "Perfect score. You can spot dental myths like a pro.",
+    };
+  }
+
+  if (scorePercent >= 80) {
+    return {
+      icon: "🔎",
+      title: "Dental Fact Finder",
+      text: "Great work. You understood most of the key prevention facts.",
+    };
+  }
+
+  if (scorePercent >= 60) {
+    return {
+      icon: "💡",
+      title: "Oral Health Explorer",
+      text: "Nice progress. A quick review can help turn more myths into facts.",
+    };
+  }
+
+  return {
+    icon: "🌱",
+    title: "Myth Quiz Starter",
+    text: "Good start. Keep practicing and your dental fact skills will grow.",
+  };
+}
+
+function updateMythAchievement() {
+  if (!mythAchievementCard || !mythAchievementIcon || !mythAchievementTitle || !mythAchievementText || !mythScorePill) return;
+
+  const answeredCount = mythQuizAnswers.filter((answer) => answer !== null).length;
+  const correctCount = mythQuizAnswers.filter(Boolean).length;
+  const scorePercent = Math.round((correctCount / myths.length) * 100);
+
+  mythScorePill.textContent = `${correctCount}/${myths.length}`;
+
+  if (answeredCount < myths.length) {
+    mythAchievementIcon.textContent = "✨";
+    mythAchievementTitle.textContent = "Answer all 5 myths to unlock an achievement";
+    mythAchievementText.textContent = `${answeredCount}/${myths.length} answered so far. Current score: ${scorePercent}%.`;
+    mythAchievementCard.classList.remove("is-unlocked");
+    return;
+  }
+
+  const achievement = getMythQuizAchievement(scorePercent);
+  mythAchievementIcon.textContent = achievement.icon;
+  mythAchievementTitle.textContent = achievement.title;
+  mythAchievementText.textContent = `${scorePercent}% score. ${achievement.text}`;
+  mythAchievementCard.classList.add("is-unlocked");
+  trackEngagement({
+    type: "myth_quiz_achievement",
+    section: "myth_quiz",
+    detail: achievement.title,
+    value: scorePercent,
+  });
+}
+
 function renderMyths() {
   mythList.innerHTML = "";
+  mythQuizAnswers = Array(myths.length).fill(null);
+  updateMythAchievement();
 
   myths.forEach((myth, index) => {
     const card = document.createElement("article");
@@ -2289,8 +2360,14 @@ function renderMyths() {
         const userAnswer = button.dataset.answer === "true";
         const isCorrect = userAnswer === myth.correctAnswer;
 
+        mythQuizAnswers[index] = isCorrect;
         feedback.textContent = `${isCorrect ? "Correct!" : "Not quite."} ${myth.feedback}`;
         feedback.className = `myth-feedback ${isCorrect ? "correct" : "incorrect"}`;
+        buttons.forEach((option) => {
+          option.disabled = true;
+          option.classList.toggle("is-selected", option === button);
+        });
+        updateMythAchievement();
         trackEngagement({ type: "myth_quiz_answer", section: "myth_quiz", detail: myth.statement, value: isCorrect });
       });
     });

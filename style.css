@@ -2506,6 +2506,60 @@ main:focus {
   border-top: 1px solid var(--hairline);
 }
 
+.myth-achievement-card {
+  max-width: var(--container);
+  margin: 0 auto 22px;
+  padding: 24px 28px;
+  border-radius: var(--r-card-2);
+  background: var(--surface);
+  box-shadow: var(--sh-tile);
+}
+
+.myth-achievement-card.is-unlocked {
+  background: linear-gradient(135deg, var(--teal-soft), #ffffff 70%);
+}
+
+.myth-achievement-body {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 16px;
+  margin-top: 8px;
+}
+
+.myth-achievement-icon {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: var(--blue-soft);
+  font-size: 26px;
+}
+
+.myth-achievement-card.is-unlocked .myth-achievement-icon {
+  background: var(--teal-soft);
+}
+
+.myth-achievement-body h3 {
+  margin-bottom: 3px;
+  font-size: 22px;
+}
+
+.myth-achievement-body p {
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.myth-score-pill {
+  padding: 10px 14px;
+  border-radius: var(--r-pill);
+  background: var(--blue-soft);
+  color: var(--blue);
+  font-family: var(--font-display);
+  font-size: 18px;
+}
+
 .myth-list {
   display: grid;
   gap: 18px;
@@ -2534,14 +2588,27 @@ main:focus {
   line-height: 1.6;
 }
 
-.myth-feedback.success {
+.myth-feedback.success,
+.myth-feedback.correct {
   background: var(--teal-soft);
   color: var(--teal-ink);
 }
 
-.myth-feedback.error {
+.myth-feedback.error,
+.myth-feedback.incorrect {
   background: var(--coral-soft);
   color: var(--coral-ink);
+}
+
+.myth-actions .btn:disabled {
+  cursor: default;
+  opacity: 0.62;
+}
+
+.myth-actions .btn.is-selected {
+  opacity: 1;
+  color: #ffffff;
+  background: var(--blue);
 }
 
 /* ---------- Certificate ---------- */
@@ -2885,6 +2952,12 @@ main:focus {
 
   .certificate-scoreline {
     gap: 24px;
+  }
+
+  .myth-achievement-body {
+    grid-template-columns: 1fr;
+    text-align: center;
+    justify-items: center;
   }
 
   .site-footer {
