@@ -9,6 +9,24 @@ const EXPLORER_ANALYTICS_API = "/explorer-analytics";
 const ENGAGEMENT_ANALYTICS_API = "/engagement-analytics";
 const COMMENTS_API = "/comments";
 
+// History is per browser, not global. This anonymous id is the only thing
+// that ties saved checks together — no account, no personal data.
+const CLIENT_ID_KEY = "smileClientId";
+
+function getClientId() {
+  try {
+    let id = localStorage.getItem(CLIENT_ID_KEY);
+    if (!id) {
+      id = crypto.randomUUID ? crypto.randomUUID() : `c-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+      localStorage.setItem(CLIENT_ID_KEY, id);
+    }
+    return id;
+  } catch (error) {
+    // Private browsing can block storage; the check still works, it just won't persist.
+    return "";
+  }
+}
+
 // Category explanations turn the score into education, not just a number.
 const categoryInfo = {
   brushing: {
@@ -1012,7 +1030,7 @@ async function saveResult(result) {
     const response = await fetch(RESULTS_API, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(result),
+      body: JSON.stringify({ ...result, clientId: getClientId() }),
     });
 
     const data = await response.json();
@@ -1071,7 +1089,7 @@ async function loadHistory() {
   refreshHistoryBtn.disabled = true;
 
   try {
-    const response = await fetch(RESULTS_API);
+    const response = await fetch(`${RESULTS_API}?clientId=${encodeURIComponent(getClientId())}`);
     const data = await response.json();
 
     if (!response.ok) {
@@ -1111,32 +1129,83 @@ function scoreTier(score) {
   return { key: "low", label: "Needs care" };
 }
 
-// Inline SVG line of scores over time — a lightweight "graph" for the summary.
-function sparklineSvg(scores) {
-  if (scores.length < 2) return "";
-  const w = 240;
-  const h = 50;
-  const pad = 5;
-  const step = (w - pad * 2) / (scores.length - 1);
-  const pts = scores.map((s, i) => [
-    pad + i * step,
-    h - pad - (Math.max(0, Math.min(100, s)) / 100) * (h - pad * 2),
-  ]);
+// Scores over time as a small line chart. Long histories are averaged into
+// buckets so the line reads as a trend instead of a scribble.
+const TREND_MAX_POINTS = 24;
+
+function bucketScores(scores, maxPoints) {
+  if (scores.length <= maxPoints) return scores;
+
+  const size = scores.length / maxPoints;
+  const buckets = [];
+
+  for (let i = 0; i < maxPoints; i += 1) {
+    const slice = scores.slice(Math.floor(i * size), Math.floor((i + 1) * size));
+    if (!slice.length) continue;
+    buckets.push(slice.reduce((sum, value) => sum + value, 0) / slice.length);
+  }
+
+  return buckets;
+}
+
+function scoreTrendChart(entries) {
+  if (entries.length < 2) return "";
+
+  const scores = entries.map((entry) => Number(entry.score));
+  const points = bucketScores(scores, TREND_MAX_POINTS);
+  const w = 600;
+  const h = 170;
+  const left = 34;
+  const right = w - 12;
+  const padY = 14;
+  const step = (right - left) / (points.length - 1);
+  const y = (value) => h - padY - (Math.max(0, Math.min(100, value)) / 100) * (h - padY * 2);
+  const pts = points.map((value, i) => [left + i * step, y(value)]);
+
   const line = pts.map((p, i) => `${i ? "L" : "M"}${p[0].toFixed(1)} ${p[1].toFixed(1)}`).join(" ");
-  const area = `${line} L${pts[pts.length - 1][0].toFixed(1)} ${h - pad} L${pad} ${h - pad} Z`;
+  const area = `${line} L${pts[pts.length - 1][0].toFixed(1)} ${h - padY} L${left} ${h - padY} Z`;
   const last = pts[pts.length - 1];
+
+  const grid = [0, 25, 50, 75, 100]
+    .map((value) => {
+      const gy = y(value).toFixed(1);
+      const label = value % 50 === 0 ? `<text class="spark-tick" x="${left - 8}" y="${gy}">${value}</text>` : "";
+      return `<line class="spark-grid" x1="${left}" y1="${gy}" x2="${right}" y2="${gy}" />${label}`;
+    })
+    .join("");
+
+  // Individual markers only stay readable while the points are few.
+  const dots =
+    points.length <= 12
+      ? pts.map((p) => `<circle class="spark-dot" cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="3.4" />`).join("")
+      : "";
+
+  const shortDate = (value) =>
+    new Date(value).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  const averaged = points.length < scores.length;
+
   return `
-    <svg class="history-spark" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-hidden="true">
-      <defs>
-        <linearGradient id="sparkFill" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stop-color="rgba(32,80,216,0.22)" />
-          <stop offset="1" stop-color="rgba(35,189,182,0)" />
-        </linearGradient>
-      </defs>
-      <path d="${area}" fill="url(#sparkFill)" />
-      <path d="${line}" fill="none" stroke="#2050d8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
-      <circle cx="${last[0].toFixed(1)}" cy="${last[1].toFixed(1)}" r="3.6" fill="#2050d8" />
-    </svg>`;
+    <div class="spark-plot">
+      <svg class="history-spark" viewBox="0 0 ${w} ${h}" role="img"
+           aria-label="Smile Score trend across ${scores.length} saved checks">
+        <defs>
+          <linearGradient id="sparkFill" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="rgba(32,80,216,0.22)" />
+            <stop offset="1" stop-color="rgba(35,189,182,0)" />
+          </linearGradient>
+        </defs>
+        ${grid}
+        <path d="${area}" fill="url(#sparkFill)" />
+        <path class="spark-line" d="${line}" fill="none" />
+        ${dots}
+        <circle class="spark-dot spark-dot-last" cx="${last[0].toFixed(1)}" cy="${last[1].toFixed(1)}" r="5" />
+      </svg>
+    </div>
+    <div class="spark-foot">
+      <span>${shortDate(entries[0].completedAt)}</span>
+      <span>${averaged ? `${scores.length} checks, averaged` : `${scores.length} checks`}</span>
+      <span>${shortDate(entries[entries.length - 1].completedAt)}</span>
+    </div>`;
 }
 
 // The six most recent checks as a column chart. The row sizes to its content
@@ -1247,7 +1316,7 @@ function renderHistory(results) {
     </div>
     <div class="hs-spark">
       <span class="hs-spark-label">Your scores over time</span>
-      ${sparklineSvg(scores)}
+      ${scoreTrendChart(byTime)}
     </div>
   `;
   historyList.appendChild(summary);

@@ -109,6 +109,7 @@ function readRequestBody(request) {
 
 function normalizeResult(result) {
   const score = Number(result.score);
+  const clientId = String(result.clientId || "").trim().slice(0, 64);
   const riskLevel = String(result.riskLevel || "").trim();
   const badge = result.badge || {};
   const recommendations = Array.isArray(result.recommendations) ? result.recommendations : [];
@@ -145,6 +146,7 @@ function normalizeResult(result) {
 
   return {
     id: crypto.randomUUID(),
+    clientId: clientId || null,
     score,
     riskLevel,
     badge: {
@@ -199,7 +201,11 @@ async function saveResult(request, response) {
     const body = await readRequestBody(request);
     const normalizedResult = normalizeResult(JSON.parse(body));
     const results = readResults();
-    const result = addProgressTrend(normalizedResult, results[0]);
+    // Results are stored newest first, so the first match is this browser's last check.
+    const previousResult = normalizedResult.clientId
+      ? results.find((item) => item.clientId === normalizedResult.clientId)
+      : null;
+    const result = addProgressTrend(normalizedResult, previousResult);
 
     results.unshift(result);
     writeResults(results.slice(0, 800));
@@ -210,9 +216,12 @@ async function saveResult(request, response) {
   }
 }
 
-function getResults(response) {
+function getResults(clientId, response) {
   try {
-    sendJson(response, 200, { results: readResults() });
+    const results = readResults();
+    sendJson(response, 200, {
+      results: clientId ? results.filter((item) => item.clientId === clientId) : results,
+    });
   } catch (error) {
     sendJson(response, 500, { error: "Saved results could not be loaded." });
   }
@@ -438,9 +447,13 @@ const server = http.createServer((request, response) => {
     return;
   }
 
-  if (request.url === "/results" && request.method === "GET") {
-    getResults(response);
-    return;
+  if (request.method === "GET") {
+    const [requestPath, queryString = ""] = request.url.split("?");
+
+    if (requestPath === "/results") {
+      getResults(new URLSearchParams(queryString).get("clientId"), response);
+      return;
+    }
   }
 
   if (request.url === "/results" && request.method === "POST") {
