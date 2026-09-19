@@ -14,10 +14,13 @@ A dedicated Project Impact page presents the problem, mission, integrated educat
 
 ## How to Run It Locally
 
-From the project folder, run:
+The backend needs Postgres. With Docker running:
 
 ```bash
-HOST=127.0.0.1 node server.js
+npm install
+npm run db:up                 # Postgres 16 in a container
+cp .env.example .env          # then fill in SESSION_SECRET
+npm start                     # applies migrations, then serves
 ```
 
 Then open:
@@ -26,27 +29,35 @@ Then open:
 http://localhost:3000
 ```
 
-You can also run:
+Generate a session secret with:
 
 ```bash
-npm start
+node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"
 ```
 
-if `npm` is available on your computer.
+`npm run db:down` removes the container when you are finished.
+
+### Commands
+
+| Command | What it does |
+| --- | --- |
+| `npm start` | Applies pending migrations, then serves the site and API |
+| `npm test` | Runs unit and integration tests |
+| `npm run migrate` | Applies pending migrations only |
+| `npm run seed:db` | Generates demo data and loads it into Postgres |
+| `npm run import` | Loads existing `data/*.json` into Postgres (one-time, re-runnable) |
+| `npm run db:up` / `db:down` | Starts / removes the local Postgres container |
 
 ## Seed Demo Data
 
 To make the dashboards look actively used for demos or presentations, run:
 
 ```bash
-npm run seed
+npm run seed:db
 ```
 
-or:
-
-```bash
-node scripts/seed-demo-data.js
-```
+That writes the demo files and loads them into Postgres. `npm run seed` on its
+own only writes the files.
 
 This creates:
 
@@ -66,29 +77,27 @@ The dashboard labels also identify seeded demo data so it is not mistaken for re
 
 ## Files
 
-- `index.html` - the page structure and all website sections.
-- `style.css` - the design system: colour tokens, type scale, radii, shadows, layout, and responsiveness.
-- `script.js` - the quiz, category scoring, visual dashboard, recommendations, achievements, tooth development explorer, progress tracking, admin analytics, myth quiz, and frontend error handling.
-- `server.js` - the backend server and API endpoints.
-- `package.json` - project metadata and start scripts.
+- `public/index.html` - the page structure and all website sections.
+- `public/style.css` - the design system: colour tokens, type scale, radii, shadows, layout, and responsiveness.
+- `public/script.js` - the quiz, scoring, dashboards, explorer, progress tracking, myth quiz, and frontend error handling.
+- `server.js` - entry point: applies migrations, then starts the server.
+- `server/app.js` - the Fastify application: security headers, rate limiting, routes.
+- `server/config.js` - environment configuration, validated at boot.
+- `server/db/` - connection pool, migration runner, SQL migrations, and SQL aggregates.
+- `server/lib/analytics-summary.js` - aggregation and the disclosure policy.
+- `server/routes/` - one module per API area.
 - `scripts/seed-demo-data.js` - creates realistic seeded demo data for dashboards.
+- `scripts/import-json-data.js` - one-time import of `data/*.json` into Postgres.
 - `README.md` - this guide.
 
 ## Backend API
 
-The backend uses local file storage and saves quiz history in:
+The backend is [Fastify](https://fastify.dev) on Postgres. The schema lives in
+`server/db/migrations/` and is applied automatically at startup.
 
-```text
-data/results.json
-```
-
-It also stores anonymous education engagement analytics in:
-
-```text
-data/engagement-analytics.json
-```
-
-Local data files are ignored by Git so personal or demo results do not get uploaded.
+The older JSON files under `data/` are read by `npm run import`, which copies
+them into Postgres. They are gitignored so personal or demo results are never
+uploaded.
 
 Endpoints:
 
@@ -178,37 +187,58 @@ The explorer lets users select ages 5 to 18 and shows:
 - Age-specific educational facts
 - Common challenges, prevention steps, biological explanations, and clinical relevance by age group
 
-Engagement events are stored locally in:
-
-```text
-data/tooth-explorer-analytics.json
-```
+Engagement events are stored anonymously in the `explorer_events` table.
+Like all engagement telemetry here, they carry no identifier for the person
+who generated them.
 
 ## Deployment Note
 
-Because this version has a backend, it cannot be hosted by GitHub Pages alone. GitHub Pages can host static websites, but it cannot run `server.js`.
+Because this version has a backend and a database, it cannot be hosted by
+GitHub Pages alone. GitHub Pages serves static files; it cannot run
+`server.js` or reach Postgres.
 
-This repo includes a `render.yaml` file for Render. It is set up as a Node web service that runs:
+`render.yaml` configures Render as a Node web service running `npm start`,
+which applies pending migrations and then serves. The server reads
+`process.env.PORT`, which Render provides.
 
-```text
-npm start
+### Database
+
+Any Postgres works. [Neon](https://neon.tech) has a free tier that suits this
+project: serverless, scales to zero, and supports branching so development runs
+against a copy rather than live data. Use the **pooled** connection string --
+the host containing `-pooler` -- so several instances share a small connection
+budget.
+
+Alternatives: Supabase (free Postgres plus auth and storage, though free
+projects pause after about a week idle), Turso (generous free tier, SQLite
+semantics), or Render's own Postgres (co-located, but free instances expire).
+
+### Environment variables
+
+| Variable | Required | Purpose |
+| --- | --- | --- |
+| `DATABASE_URL` | yes | Pooled Postgres connection string |
+| `SESSION_SECRET` | yes | Signs the session cookie; Render generates it |
+| `APP_ORIGIN` | yes | Public URL; every write is checked against it |
+| `ADMIN_PIN` | yes | Required before comments can be moderated |
+| `RESEND_API_KEY` | for email | Sends sign-in codes |
+| `NODE_ENV` | yes | `production` enables HSTS and strict config checks |
+
+The app refuses to start in production if `DATABASE_URL`, `SESSION_SECRET`, or
+`APP_ORIGIN` is missing, rather than starting in a weakened state.
+
+### Migrating off the JSON files
+
+The pre-Postgres deploy kept its data on a Render disk at `/var/data`. To carry
+it over, keep the disk mounted, set `DATABASE_URL`, and run once:
+
+```bash
+npm run import
 ```
 
-The server uses `process.env.PORT`, which is what most hosting services provide automatically.
-
-For live saved results, comments, and analytics, the app needs persistent storage. The Render setup uses:
-
-```text
-DATA_DIR=/var/data
-```
-
-Set an `ADMIN_PIN` environment variable on Render. That PIN is required before pending comments can be approved or rejected.
-
-The hosted backend automatically seeds empty analytics storage with clearly marked demo records. To turn seeded demo data off later, set:
-
-```text
-SEED_DEMO_DATA=false
-```
+It is re-runnable: rows are inserted by their existing id and skipped if
+already present. Imported records stay anonymous -- nothing is attached to an
+account. Once the import is done, the disk and `DATA_DIR` can both be removed.
 
 ## Educational Note
 

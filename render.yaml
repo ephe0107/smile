@@ -3,18 +3,43 @@ services:
     name: smile2032
     runtime: node
     plan: starter
-    buildCommand: npm install
+    buildCommand: npm ci
     startCommand: npm start
     branch: main
     autoDeployTrigger: commit
     healthCheckPath: /health
     envVars:
-      - key: DATA_DIR
-        value: /var/data
+      - key: NODE_ENV
+        value: production
+
+      # Neon's POOLED connection string (the host containing "-pooler").
+      # The pooler multiplexes, so several instances share a small budget.
+      - key: DATABASE_URL
+        sync: false
+
+      # Signs the session cookie. Render generates it once and keeps it;
+      # changing it signs everyone out.
+      - key: SESSION_SECRET
+        generateValue: true
+
+      # The public URL. Every state-changing request is checked against it,
+      # so a wrong value here breaks all writes.
+      - key: APP_ORIGIN
+        sync: false
+
+      # Required before the moderation queue will open in production.
       - key: ADMIN_PIN
         sync: false
-      - key: SEED_DEMO_DATA
-        value: "true"
+
+      # Transactional email for sign-in codes.
+      - key: RESEND_API_KEY
+        sync: false
+      - key: MAIL_FROM
+        sync: false
+
+    # The disk holds the pre-Postgres JSON files. Keep it mounted for the
+    # deploy that runs scripts/import-json-data.js, then remove both the disk
+    # and DATA_DIR -- results live in Postgres from then on.
     disk:
       name: smile2032-data
       mountPath: /var/data

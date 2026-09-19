@@ -6,7 +6,20 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node server.js",
+    "migrate": "node server/db/migrate.js",
     "seed": "node scripts/seed-demo-data.js",
-    "test": "node --test"
+    "db:up": "docker run -d --name smile-pg -e POSTGRES_USER=smile -e POSTGRES_PASSWORD=smile -e POSTGRES_DB=smile -p 5432:5432 postgres:16-alpine",
+    "db:down": "docker rm -f smile-pg",
+    "test": "node --test",
+    "import": "node scripts/import-json-data.js",
+    "seed:db": "npm run seed && npm run import"
+  },
+  "dependencies": {
+    "@fastify/cookie": "^11.1.2",
+    "@fastify/helmet": "^13.1.1",
+    "@fastify/rate-limit": "^11.2.0",
+    "@fastify/static": "^10.1.4",
+    "fastify": "^5.12.5",
+    "pg": "^8.23.0"
   }
 }

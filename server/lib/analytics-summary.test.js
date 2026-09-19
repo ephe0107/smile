@@ -52,6 +52,37 @@ test("weakest category is the lowest-scoring one, by label", () => {
   assert.equal(weakestCategoryLabel({}), null);
 });
 
+test("tied weakest categories resolve alphabetically, not by key order", () => {
+  // 7% of real results have two categories sharing the lowest score. Without
+  // an explicit tie-break the winner depends on key order, and a JSON object
+  // and a jsonb column order keys differently -- so the same data would give
+  // two different answers depending on where it was stored.
+  const tied = {
+    categoryScores: {
+      flossing: { label: "Flossing", score: 30 },
+      care: { label: "Professional Care", score: 30 },
+      brushing: { label: "Brushing", score: 90 },
+    },
+  };
+  const reordered = {
+    categoryScores: {
+      care: { label: "Professional Care", score: 30 },
+      brushing: { label: "Brushing", score: 90 },
+      flossing: { label: "Flossing", score: 30 },
+    },
+  };
+
+  assert.equal(weakestCategoryLabel(tied), "Flossing");
+  assert.equal(weakestCategoryLabel(reordered), "Flossing", "key order must not change the answer");
+});
+
+test("categories missing a label or score are ignored", () => {
+  assert.equal(
+    weakestCategoryLabel({ categoryScores: { a: { score: 1 }, b: { label: "Diet", score: 50 } } }),
+    "Diet"
+  );
+});
+
 test("weakest category does not mutate the caller's data", () => {
   const result = makeResult();
   const before = Object.keys(result.categoryScores);

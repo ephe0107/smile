@@ -13,3 +13,11 @@ data/results.json
 data/tooth-explorer-analytics.json
 data/engagement-analytics.json
 data/comments.json
+
+# Dependencies
+node_modules/
+
+# Secrets — never commit connection strings, session keys, or API keys
+.env
+.env.*
+!.env.example
