@@ -93,7 +93,10 @@ Local data files are ignored by Git so personal or demo results do not get uploa
 Endpoints:
 
 - `POST /results` - saves a completed quiz result.
-- `GET /results` - returns previous quiz results.
+- `GET /results?clientId=...` - returns saved results for that one browser. The `clientId` is
+  required. This endpoint used to return every saved result to any caller; it no longer does.
+- `GET /analytics/summary` - aggregate population figures for the Analytics and Impact
+  dashboards. Counts, averages, and distributions only - individual results never leave the server.
 - `POST /explorer-analytics` - saves tooth development age lookups and tooth interactions.
 - `POST /engagement-analytics` - saves anonymous education engagement events.
 - `GET /engagement-analytics` - returns anonymous education engagement events for dashboards.
@@ -112,6 +115,18 @@ Saved fields:
 - `weakestHabit`
 - `trend`
 - `completedAt`
+
+## Data Privacy
+
+Saved results describe a person's health habits, so the backend treats them as personal data:
+
+- **Aggregate, don't ship.** The dashboards receive finished statistics from
+  `/analytics/summary`, not the underlying records. Aggregation runs in
+  `server/lib/analytics-summary.js`.
+- **A cohort floor.** Population figures are withheld until at least 5 people have completed a
+  Smile Check, and any label breakdown covering fewer than 5 people is dropped. Below that, an
+  "average" is just one person's answers restated.
+- **Scoped reads.** Saved history is only ever returned for an explicitly requested `clientId`.
 
 ## Navigation
 

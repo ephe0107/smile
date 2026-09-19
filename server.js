@@ -8,6 +8,7 @@ const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
 const { seedDemoData } = require("./scripts/seed-demo-data");
+const { buildAnalyticsSummary } = require("./server/lib/analytics-summary");
 
 const PORT = process.env.PORT || 3000;
 const HOST = process.env.HOST || "0.0.0.0";
@@ -209,6 +210,7 @@ async function saveResult(request, response) {
 
     results.unshift(result);
     writeResults(results.slice(0, 800));
+    clearSummaryCache();
 
     sendJson(response, 201, { result });
   } catch (error) {
@@ -216,14 +218,49 @@ async function saveResult(request, response) {
   }
 }
 
+// History is per browser until accounts land, so without an identifier there is
+// nothing to return. This endpoint used to hand every saved result -- habits,
+// risk levels, report text -- to any caller. Population figures now come from
+// /analytics/summary in aggregate form instead.
 function getResults(clientId, response) {
-  try {
-    const results = readResults();
-    sendJson(response, 200, {
-      results: clientId ? results.filter((item) => item.clientId === clientId) : results,
+  if (!clientId) {
+    sendJson(response, 400, {
+      error: "A clientId is required. Population figures are available from /analytics/summary.",
     });
+    return;
+  }
+
+  try {
+    const results = readResults().filter((item) => item.clientId === clientId);
+    sendJson(response, 200, { results });
   } catch (error) {
     sendJson(response, 500, { error: "Saved results could not be loaded." });
+  }
+}
+
+// The summary is the same for every caller, so a short cache keeps the
+// dashboards cheap. Writes clear it so a freshly saved check shows up at once.
+const SUMMARY_CACHE_MS = 60_000;
+let summaryCache = { expiresAt: 0, payload: null };
+
+function clearSummaryCache() {
+  summaryCache = { expiresAt: 0, payload: null };
+}
+
+function getAnalyticsSummary(response) {
+  try {
+    const now = Date.now();
+
+    if (!summaryCache.payload || summaryCache.expiresAt <= now) {
+      summaryCache = {
+        expiresAt: now + SUMMARY_CACHE_MS,
+        payload: buildAnalyticsSummary(readResults(), readJsonArray(ENGAGEMENT_ANALYTICS_FILE)),
+      };
+    }
+
+    sendJson(response, 200, summaryCache.payload);
+  } catch (error) {
+    sendJson(response, 500, { error: "Analytics summary could not be built." });
   }
 }
 
@@ -284,6 +321,7 @@ async function saveEngagementAnalytics(request, response) {
 
     analytics.unshift(savedEvent);
     writeJsonArray(ENGAGEMENT_ANALYTICS_FILE, analytics.slice(0, 1500));
+    clearSummaryCache();
 
     sendJson(response, 201, { event: savedEvent });
   } catch (error) {
@@ -449,6 +487,11 @@ const server = http.createServer((request, response) => {
 
   if (request.method === "GET") {
     const [requestPath, queryString = ""] = request.url.split("?");
+
+    if (requestPath === "/analytics/summary") {
+      getAnalyticsSummary(response);
+      return;
+    }
 
     if (requestPath === "/results") {
       getResults(new URLSearchParams(queryString).get("clientId"), response);

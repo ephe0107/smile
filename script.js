@@ -7,6 +7,7 @@
 const RESULTS_API = "/results";
 const EXPLORER_ANALYTICS_API = "/explorer-analytics";
 const ENGAGEMENT_ANALYTICS_API = "/engagement-analytics";
+const ANALYTICS_SUMMARY_API = "/analytics/summary";
 const COMMENTS_API = "/comments";
 
 // History is per browser, not global. This anonymous id is the only thing
@@ -1823,63 +1824,10 @@ function percent(part, total) {
   return Math.round((part / total) * 100);
 }
 
-function countBy(items, getKey) {
-  return items.reduce((counts, item) => {
-    const key = getKey(item);
-    counts[key] = (counts[key] || 0) + 1;
-    return counts;
-  }, {});
-}
-
-function mostCommonFromCounts(counts) {
-  const entries = Object.entries(counts);
-
-  if (!entries.length) {
-    return { label: "Not enough data yet", count: 0 };
-  }
-
-  const [label, count] = entries.sort((a, b) => b[1] - a[1])[0];
-  return { label, count };
-}
-
-function getWeaknessCounts(results) {
-  return results.reduce((counts, result) => {
-    const categories = Object.values(result.categoryScores || {});
-    const weakest = categories.sort((a, b) => Number(a.score) - Number(b.score))[0];
-
-    if (weakest) {
-      counts[weakest.label] = (counts[weakest.label] || 0) + 1;
-    }
-
-    return counts;
-  }, {});
-}
-
-function getScoreDistribution(results) {
-  const buckets = {
-    "0-49": 0,
-    "50-64": 0,
-    "65-79": 0,
-    "80-89": 0,
-    "90-100": 0,
-  };
-
-  results.forEach((result) => {
-    if (result.score < 50) {
-      buckets["0-49"] += 1;
-    } else if (result.score < 65) {
-      buckets["50-64"] += 1;
-    } else if (result.score < 80) {
-      buckets["65-79"] += 1;
-    } else if (result.score < 90) {
-      buckets["80-89"] += 1;
-    } else {
-      buckets["90-100"] += 1;
-    }
-  });
-
-  return buckets;
-}
+// countBy, mostCommonFromCounts, getWeaknessCounts and getScoreDistribution
+// used to live here. They now run on the server in server/lib/analytics-summary.js,
+// because computing them in the browser meant shipping every saved result to
+// every visitor. The browser receives finished aggregates instead.
 
 function renderMetricCards(metrics) {
   metricGrid.innerHTML = "";
@@ -1980,7 +1928,7 @@ function renderColumnChart(container, counts, total) {
   `;
 }
 
-function getPopulationPerformanceTrend(results, engagement = []) {
+function getPopulationPerformanceTrend() {
   const monthLabels = ["Jun", "Jul", "Aug"];
 
   // Aggregate projection for the whole platform: realistic improvement as education exposure increases.
@@ -1994,8 +1942,8 @@ function getPopulationPerformanceTrend(results, engagement = []) {
   });
 }
 
-function renderPopulationPerformanceChart(results, engagement = []) {
-  const trend = getPopulationPerformanceTrend(results, engagement);
+function renderPopulationPerformanceChart() {
+  const trend = getPopulationPerformanceTrend();
   const xForIndex = (index) => (trend.length === 1 ? 260 : 44 + index * (432 / (trend.length - 1)));
   const yForValue = (value) => 164 - (value / 100) * 124;
   const linePoints = (key) =>
@@ -2125,15 +2073,12 @@ function renderPreventionMixChart(weaknessCounts, total) {
   `;
 }
 
-function renderLearningReadinessChart(results) {
+function renderLearningReadinessChart(categoryAverages = {}) {
   const categories = ["brushing", "flossing", "diet", "fluoride", "care"];
   const labels = ["Hygiene", "Flossing", "Diet", "Fluoride", "Care"];
   const averages = categories.map((category) => {
-    const values = results
-      .map((result) => result.categoryScores?.[category]?.score)
-      .filter((score) => Number.isFinite(Number(score)))
-      .map(Number);
-    return values.length ? Math.round(values.reduce((sum, score) => sum + score, 0) / values.length) : 60;
+    const value = Number(categoryAverages[category]);
+    return Number.isFinite(value) ? value : 60;
   });
   const polygon = averages.map((score, index) => {
     const angle = -Math.PI / 2 + index * ((Math.PI * 2) / averages.length);
@@ -2159,21 +2104,6 @@ function renderLearningReadinessChart(results) {
   `;
 }
 
-function getEngagementSummary(engagement = []) {
-  const events = Array.isArray(engagement) ? engagement : [];
-  const mythAnswers = events.filter((event) => event.type === "myth_quiz_answer");
-  const correctMythAnswers = mythAnswers.filter((event) => event.value === true).length;
-
-  return {
-    totalEvents: events.length,
-    moduleOpens: events.filter((event) => event.type === "module_open").length,
-    preventionActions: events.filter((event) => event.type === "prevention_checklist").length,
-    sciencePopups: events.filter((event) => event.type === "science_popup" || event.type === "evidence_layer").length,
-    mythCorrectRate: mythAnswers.length ? `${percent(correctMythAnswers, mythAnswers.length)}%` : "Not enough data",
-    commonSection: mostCommonFromCounts(countBy(events, (event) => event.section || "General")),
-  };
-}
-
 async function fetchJsonApi(url, fallbackKey) {
   const response = await fetch(url);
   const data = await response.json();
@@ -2185,33 +2115,55 @@ async function fetchJsonApi(url, fallbackKey) {
   return data;
 }
 
-function renderAnalytics(results, engagement = []) {
-  const total = results.length;
-  const engagementSummary = getEngagementSummary(engagement);
+function setChartsUnavailable(message) {
+  [
+    scoreDistributionChart,
+    riskDistributionChart,
+    issueChart,
+    engagementTrendChart,
+    preventionMixChart,
+    learningReadinessChart,
+  ].forEach((chart) => {
+    if (chart) chart.innerHTML = `<div class="empty-history">${message}</div>`;
+  });
+}
+
+function renderAnalytics(summary) {
+  const stats = summary.results || {};
+  const engagementSummary = summary.engagement || {};
+  const total = Number(stats.total) || 0;
+  const minCohort = Number(summary.minCohort) || 5;
 
   if (!total) {
     analyticsStatus.textContent = "No completed quizzes yet.";
     metricGrid.innerHTML = "";
-    scoreDistributionChart.innerHTML = `<div class="empty-history">Complete quizzes to populate score distribution.</div>`;
-    riskDistributionChart.innerHTML = `<div class="empty-history">Risk distribution will appear after results are saved.</div>`;
-    issueChart.innerHTML = `<div class="empty-history">Common oral health issues will appear here.</div>`;
-    engagementTrendChart.innerHTML = `<div class="empty-history">Trend chart will appear after results load.</div>`;
-    preventionMixChart.innerHTML = `<div class="empty-history">Prevention mix will appear after results load.</div>`;
-    learningReadinessChart.innerHTML = `<div class="empty-history">Readiness chart will appear after results load.</div>`;
+    setChartsUnavailable("Complete quizzes to populate this chart.");
     impactHeadline.textContent = "No population data yet";
-    impactSummary.textContent = "Once youth complete the quiz, this dashboard will reveal education gaps and prevention priorities.";
+    impactSummary.textContent =
+      "Once youth complete the quiz, this dashboard will reveal education gaps and prevention priorities.";
     return;
   }
 
-  const averageScore = Math.round(results.reduce((sum, result) => sum + Number(result.score), 0) / total);
-  const riskCounts = countBy(results, (result) => result.riskLevel);
-  const weaknessCounts = getWeaknessCounts(results);
-  const recommendationCounts = countBy(
-    results.flatMap((result) => result.recommendations || []),
-    (recommendation) => recommendation.split(":")[0]
-  );
-  const commonWeakness = mostCommonFromCounts(weaknessCounts);
-  const commonRecommendation = mostCommonFromCounts(recommendationCounts);
+  // Enough people to count, not enough to describe. Publishing averages or
+  // distributions over a handful of participants would report individuals.
+  if (stats.suppressed) {
+    const remaining = minCohort - total;
+    analyticsStatus.textContent =
+      `${total} completed quiz${total === 1 ? "" : "zes"} so far — ` +
+      `population figures unlock at ${minCohort} to protect individual participants.`;
+    renderMetricCards([
+      { label: "Quizzes completed", value: total, note: "Saved Smile Checks" },
+      { label: "Education engagement", value: engagementSummary.totalEvents || 0, note: "Learning interactions" },
+    ]);
+    setChartsUnavailable(
+      `${remaining} more participant${remaining === 1 ? "" : "s"} needed before this can be shown.`
+    );
+    impactHeadline.textContent = "Gathering population data";
+    impactSummary.textContent =
+      `Education gap analysis needs at least ${minCohort} completed Smile Checks so that no single ` +
+      `participant can be identified from the results.`;
+    return;
+  }
 
   analyticsStatus.textContent =
     `${total} completed quiz${total === 1 ? "" : "zes"} analyzed` +
@@ -2219,17 +2171,20 @@ function renderAnalytics(results, engagement = []) {
   // A few headline KPIs only — the distributions live in the charts below.
   renderMetricCards([
     { label: "Quizzes completed", value: total, note: "Saved Smile Checks" },
-    { label: "Average Smile Score", value: `${averageScore}`, unit: "/100", note: "Across all results" },
-    { label: "Education engagement", value: engagementSummary.totalEvents, note: "Learning interactions" },
+    { label: "Average Smile Score", value: `${stats.averageScore}`, unit: "/100", note: "Across all results" },
+    { label: "Education engagement", value: engagementSummary.totalEvents || 0, note: "Learning interactions" },
     { label: "Myth quiz accuracy", value: engagementSummary.mythCorrectRate, note: "Learning-check performance" },
   ]);
 
-  renderColumnChart(scoreDistributionChart, getScoreDistribution(results), total);
-  renderRiskDonut(riskCounts, total);
-  renderHorizontalChart(issueChart, weaknessCounts, total);
-  renderPopulationPerformanceChart(results, engagement);
-  renderPreventionMixChart(weaknessCounts, total);
-  renderLearningReadinessChart(results);
+  renderColumnChart(scoreDistributionChart, stats.scoreDistribution || {}, total);
+  renderRiskDonut(stats.riskCounts || {}, total);
+  renderHorizontalChart(issueChart, stats.weaknessCounts || {}, total);
+  renderPopulationPerformanceChart();
+  renderPreventionMixChart(stats.weaknessCounts || {}, total);
+  renderLearningReadinessChart(stats.categoryAverages || {});
+
+  const commonWeakness = stats.commonWeakness || { label: "Not enough data yet" };
+  const commonRecommendation = stats.commonRecommendation || { label: "prevention" };
 
   impactHeadline.textContent = `${commonWeakness.label} is the clearest education gap`;
   impactSummary.textContent =
@@ -2249,61 +2204,75 @@ async function loadAnalytics() {
   refreshAnalyticsBtn.disabled = true;
 
   try {
-    const [resultData, engagementData] = await Promise.all([
-      fetchJsonApi(RESULTS_API, "Analytics"),
-      fetchJsonApi(ENGAGEMENT_ANALYTICS_API, "Engagement analytics"),
-    ]);
-
-    renderAnalytics(resultData.results, engagementData.engagement);
+    // One request, and it returns aggregates only. Individual results never
+    // leave the server.
+    renderAnalytics(await fetchJsonApi(ANALYTICS_SUMMARY_API, "Analytics"));
   } catch (error) {
     analyticsStatus.textContent = `Could not load analytics: ${error.message}`;
-    scoreDistributionChart.innerHTML = `<div class="empty-history">Start the backend to calculate analytics.</div>`;
-    riskDistributionChart.innerHTML = `<div class="empty-history">Risk data is unavailable right now.</div>`;
-    issueChart.innerHTML = `<div class="empty-history">Issue data is unavailable right now.</div>`;
-    engagementTrendChart.innerHTML = `<div class="empty-history">Trend chart needs backend data.</div>`;
-    preventionMixChart.innerHTML = `<div class="empty-history">Prevention mix needs backend data.</div>`;
-    learningReadinessChart.innerHTML = `<div class="empty-history">Readiness chart needs backend data.</div>`;
+    setChartsUnavailable("Start the backend to calculate analytics.");
     impactHeadline.textContent = "Analytics unavailable";
-    impactSummary.textContent = "The admin dashboard uses saved backend results, so the backend must be running.";
+    impactSummary.textContent =
+      "The admin dashboard uses saved backend results, so the backend must be running.";
   } finally {
     refreshAnalyticsBtn.disabled = false;
   }
 }
 
-function renderImpactMetricCards(results, engagement = []) {
-  const total = results.length;
-  const engagementSummary = getEngagementSummary(engagement);
+function renderImpactMetricCards(summary) {
+  const stats = summary.results || {};
+  const engagementSummary = summary.engagement || {};
+  const total = Number(stats.total) || 0;
+  const minCohort = Number(summary.minCohort) || 5;
 
   if (!total) {
-    impactMetricsStatus.textContent = "No completed quizzes yet. Complete a Smile Check to populate live metrics.";
+    impactMetricsStatus.textContent =
+      "No completed quizzes yet. Complete a Smile Check to populate live metrics.";
     impactMetricsGrid.innerHTML = `
       <div class="empty-history">Live impact metrics will appear after quiz results are saved.</div>
     `;
     return;
   }
 
-  const averageScore = Math.round(results.reduce((sum, result) => sum + Number(result.score), 0) / total);
-  const riskCounts = countBy(results, (result) => result.riskLevel);
-  const weaknessCounts = getWeaknessCounts(results);
-  const commonWeakness = mostCommonFromCounts(weaknessCounts);
-  const unlockedAchievements = results.reduce((sum, result) => {
-    return sum + (result.achievements || []).filter((achievement) => achievement.unlocked).length;
-  }, 0);
+  // Engagement events carry no identity, so they stay reportable even while
+  // the result-derived figures are still withheld.
+  const metrics = stats.suppressed
+    ? [
+        { label: "Learner completions", value: total, note: "Completed Smile Score assessments" },
+        {
+          label: "Education interactions",
+          value: engagementSummary.totalEvents || 0,
+          note: "Anonymous learning engagement events",
+        },
+        {
+          label: "Evidence views opened",
+          value: engagementSummary.sciencePopups || 0,
+          note: "Evidence-based explanation views",
+        },
+      ]
+    : [
+        { label: "Learner completions", value: total, note: "Completed Smile Score assessments" },
+        { label: "Average Smile Score", value: `${stats.averageScore}/100`, note: "Current prevention literacy indicator" },
+        { label: "Low Risk", value: `${stats.riskPercentages?.["Low Risk"] ?? 0}%`, note: "Students showing stronger prevention habits" },
+        { label: "Education gap", value: stats.commonWeakness?.label ?? "Not enough data yet", note: "Most frequent weakest category" },
+        { label: "Achievements unlocked", value: stats.unlockedAchievements ?? 0, note: "Positive reinforcement moments" },
+        {
+          label: "Moderate/High Risk",
+          value: `${(stats.riskPercentages?.["Moderate Risk"] ?? 0) + (stats.riskPercentages?.["High Risk"] ?? 0)}%`,
+          note: "Potential target group for outreach",
+        },
+        { label: "Education interactions", value: engagementSummary.totalEvents || 0, note: "Anonymous learning engagement events" },
+        {
+          label: "Most used education area",
+          value: engagementSummary.commonSection?.label ?? "Not enough data yet",
+          note: `${engagementSummary.commonSection?.count ?? 0} interaction${engagementSummary.commonSection?.count === 1 ? "" : "s"}`,
+        },
+        { label: "Evidence views opened", value: engagementSummary.sciencePopups || 0, note: "Evidence-based explanation views" },
+        { label: "Learning records", value: total, note: "Assessment records available for analysis" },
+      ];
 
-  impactMetricsStatus.textContent = `${total} saved result${total === 1 ? "" : "s"} analyzed from backend data.`;
-
-  const metrics = [
-    { label: "Learner completions", value: total, note: "Completed Smile Score assessments" },
-    { label: "Average Smile Score", value: `${averageScore}/100`, note: "Current prevention literacy indicator" },
-    { label: "Low Risk", value: `${percent(riskCounts["Low Risk"] || 0, total)}%`, note: "Students showing stronger prevention habits" },
-    { label: "Education gap", value: commonWeakness.label, note: "Most frequent weakest category" },
-    { label: "Achievements unlocked", value: unlockedAchievements, note: "Positive reinforcement moments" },
-    { label: "Moderate/High Risk", value: `${percent((riskCounts["Moderate Risk"] || 0) + (riskCounts["High Risk"] || 0), total)}%`, note: "Potential target group for outreach" },
-    { label: "Education interactions", value: engagementSummary.totalEvents, note: "Anonymous learning engagement events" },
-    { label: "Most used education area", value: engagementSummary.commonSection.label, note: `${engagementSummary.commonSection.count} interaction${engagementSummary.commonSection.count === 1 ? "" : "s"}` },
-    { label: "Evidence views opened", value: engagementSummary.sciencePopups, note: "Evidence-based explanation views" },
-    { label: "Learning records", value: total, note: "Assessment records available for analysis" },
-  ];
+  impactMetricsStatus.textContent = stats.suppressed
+    ? `${total} saved result${total === 1 ? "" : "s"} so far. Score and risk figures unlock at ${minCohort} participants.`
+    : `${total} saved result${total === 1 ? "" : "s"} analyzed from backend data.`;
 
   impactMetricsGrid.innerHTML = "";
   metrics.forEach((metric) => {
@@ -2324,12 +2293,7 @@ async function loadImpactMetrics() {
   refreshImpactBtn.disabled = true;
 
   try {
-    const [resultData, engagementData] = await Promise.all([
-      fetchJsonApi(RESULTS_API, "Impact metrics"),
-      fetchJsonApi(ENGAGEMENT_ANALYTICS_API, "Engagement metrics"),
-    ]);
-
-    renderImpactMetricCards(resultData.results, engagementData.engagement);
+    renderImpactMetricCards(await fetchJsonApi(ANALYTICS_SUMMARY_API, "Impact metrics"));
   } catch (error) {
     impactMetricsStatus.textContent = `Could not load impact metrics: ${error.message}`;
     impactMetricsGrid.innerHTML = `
@@ -2339,6 +2303,7 @@ async function loadImpactMetrics() {
     refreshImpactBtn.disabled = false;
   }
 }
+
 
 let mythQuizAnswers = Array(myths.length).fill(null);
 
