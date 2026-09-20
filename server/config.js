@@ -40,6 +40,19 @@ function required(name) {
   return value;
 }
 
+// Cookie signing needs a key or it throws. Rather than let a missing .env
+// take the dev server down, generate an ephemeral one -- it changes on every
+// restart, so local sessions do not survive a reload, which is the correct
+// trade for a value that must never be a shipped default.
+function sessionSecret() {
+  const configured = required("SESSION_SECRET");
+  if (configured) return configured;
+
+  const ephemeral = require("crypto").randomBytes(32).toString("base64url");
+  console.warn("SESSION_SECRET is not set; using a temporary key. Sessions end when the server restarts.");
+  return ephemeral;
+}
+
 const config = {
   isProduction,
   root: ROOT,
@@ -49,7 +62,7 @@ const config = {
 
   databaseUrl: process.env.DATABASE_URL || "",
   appOrigin: (process.env.APP_ORIGIN || `http://localhost:${process.env.PORT || 3000}`).replace(/\/$/, ""),
-  sessionSecret: required("SESSION_SECRET"),
+  sessionSecret: sessionSecret(),
 
   mail: {
     apiKey: process.env.RESEND_API_KEY || "",

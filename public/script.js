@@ -9,10 +9,18 @@ const EXPLORER_ANALYTICS_API = "/explorer-analytics";
 const ENGAGEMENT_ANALYTICS_API = "/engagement-analytics";
 const ANALYTICS_SUMMARY_API = "/analytics/summary";
 const COMMENTS_API = "/comments";
+const AUTH_API = "/auth";
+const ME_API = "/me";
 
-// History is per browser, not global. This anonymous id is the only thing
-// that ties saved checks together — no account, no personal data.
+// Signed out, history is per browser and this anonymous id is the only thing
+// tying saved checks together. Signed in, the server uses the session instead
+// and this id is not sent at all.
 const CLIENT_ID_KEY = "smileClientId";
+
+// Who is signed in, as far as this page knows. The real answer always comes
+// from the session cookie, which this script cannot read — this is only used
+// to decide what to render.
+let currentUser = null;
 
 function getClientId() {
   try {
@@ -1027,11 +1035,17 @@ async function saveResult(result) {
   saveStatus.textContent = "Saving your result...";
   saveStatus.className = "save-status";
 
+  // Signed in, the result is attached to the account by the session cookie and
+  // no browser id is sent. Signed out, it falls back to the per-browser id.
+  const signedIn = Boolean(currentUser);
+  const url = signedIn ? `${ME_API}/results` : RESULTS_API;
+  const body = signedIn ? result : { ...result, clientId: getClientId() };
+
   try {
-    const response = await fetch(RESULTS_API, {
+    const response = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...result, clientId: getClientId() }),
+      body: JSON.stringify(body),
     });
 
     const data = await response.json();
@@ -1042,7 +1056,9 @@ async function saveResult(result) {
 
     finalResult = data.result;
     renderTrend(finalResult.trend);
-    saveStatus.textContent = "Saved to your dashboard.";
+    saveStatus.textContent = signedIn
+      ? `Saved to your account — it will be here on any device.`
+      : "Saved to this browser. Sign in to keep it across devices.";
     saveStatus.className = "save-status success";
   } catch (error) {
     saveStatus.textContent = `Result shown, but save failed: ${error.message}`;
@@ -1090,7 +1106,9 @@ async function loadHistory() {
   refreshHistoryBtn.disabled = true;
 
   try {
-    const response = await fetch(`${RESULTS_API}?clientId=${encodeURIComponent(getClientId())}`);
+    const response = await fetch(
+      currentUser ? `${ME_API}/results` : `${RESULTS_API}?clientId=${encodeURIComponent(getClientId())}`
+    );
     const data = await response.json();
 
     if (!response.ok) {
@@ -2838,6 +2856,12 @@ document.querySelectorAll("[data-screen-link]").forEach((link) => {
       loadImpactMetrics();
     }
 
+    if (screenId === "account") {
+      // The session may have expired in another tab, so re-check rather than
+      // trusting what this page last rendered.
+      loadCurrentUser();
+    }
+
     if (screenId === "team") {
       renderOralHealthTeam();
       trackEngagement({ type: "module_open", section: "team", detail: "Meet Your Oral Health Team" });
@@ -2862,3 +2886,285 @@ renderAccessAssessment();
 renderOralHealthTeam();
 renderCaregiverResources();
 loadApprovedComments();
+
+/* ==========================================================
+   Account: passwordless sign-in.
+
+   The session lives in an HttpOnly cookie, which means this script cannot
+   read it, and neither can anything injected into the page. Every call below
+   relies on the browser attaching that cookie automatically; there is no
+   token in localStorage to steal.
+   ========================================================== */
+
+const accountPill = document.querySelector("#accountPill");
+const accountPillLabel = document.querySelector("#accountPillLabel");
+const accountHeading = document.querySelector("#accountHeading");
+const accountIntro = document.querySelector("#accountIntro");
+const signInCard = document.querySelector("#signInCard");
+const verifyCard = document.querySelector("#verifyCard");
+const accountCard = document.querySelector("#accountCard");
+const requestCodeForm = document.querySelector("#requestCodeForm");
+const verifyCodeForm = document.querySelector("#verifyCodeForm");
+const signInEmail = document.querySelector("#signInEmail");
+const ageConfirm = document.querySelector("#ageConfirm");
+const requestCodeBtn = document.querySelector("#requestCodeBtn");
+const signInStatus = document.querySelector("#signInStatus");
+const verifyCode = document.querySelector("#verifyCode");
+const verifyCodeBtn = document.querySelector("#verifyCodeBtn");
+const verifyStatus = document.querySelector("#verifyStatus");
+const verifySentTo = document.querySelector("#verifySentTo");
+const useAnotherEmailBtn = document.querySelector("#useAnotherEmailBtn");
+const accountAvatar = document.querySelector("#accountAvatar");
+const accountEmail = document.querySelector("#accountEmail");
+const accountMeta = document.querySelector("#accountMeta");
+const accountStatus = document.querySelector("#accountStatus");
+const signOutBtn = document.querySelector("#signOutBtn");
+const exportDataBtn = document.querySelector("#exportDataBtn");
+const deleteAccountBtn = document.querySelector("#deleteAccountBtn");
+
+// The address a code was last sent to, so the verify step knows who is
+// signing in without asking twice.
+let pendingEmail = "";
+
+function setStatus(element, message, state = "") {
+  if (!element) return;
+  element.textContent = message;
+  element.className = `save-status${state ? ` ${state}` : ""}`;
+}
+
+async function postJson(url, body) {
+  const response = await fetch(url, {
+    method: body === undefined ? "POST" : "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body ?? {}),
+  });
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(data.error || "That did not work. Please try again.");
+  }
+
+  return data;
+}
+
+function renderAccount() {
+  const signedIn = Boolean(currentUser);
+
+  if (accountPill) accountPill.classList.toggle("is-signed-in", signedIn);
+  if (accountPillLabel) {
+    accountPillLabel.textContent = signedIn ? "My account" : "Sign in";
+  }
+
+  // Exactly one of the three cards is ever visible.
+  if (signInCard) signInCard.hidden = signedIn || Boolean(pendingEmail);
+  if (verifyCard) verifyCard.hidden = signedIn || !pendingEmail;
+  if (accountCard) accountCard.hidden = !signedIn;
+
+  if (accountHeading) {
+    accountHeading.textContent = signedIn ? "Your account" : "Save your progress";
+  }
+
+  if (accountIntro) {
+    accountIntro.textContent = signedIn
+      ? "Your Smile Checks are saved to this account and follow you to any device."
+      : "Sign in with your email and your Smile Checks follow you to any device. No password to remember — we email you a 6-digit code instead.";
+  }
+
+  if (signedIn) {
+    if (accountEmail) accountEmail.textContent = currentUser.email;
+    if (accountAvatar) accountAvatar.textContent = (currentUser.email || "?").charAt(0);
+    if (accountMeta) {
+      const since = currentUser.createdAt
+        ? new Date(currentUser.createdAt).toLocaleDateString(undefined, { month: "long", year: "numeric" })
+        : "";
+      accountMeta.textContent = since ? `Member since ${since}` : "Signed in";
+    }
+  }
+}
+
+async function loadCurrentUser() {
+  try {
+    const response = await fetch(`${AUTH_API}/me`);
+    const data = await response.json();
+    currentUser = data.user || null;
+  } catch (error) {
+    // Signed out is the safe assumption when the check itself fails.
+    currentUser = null;
+  }
+
+  renderAccount();
+  return currentUser;
+}
+
+async function handleRequestCode(event) {
+  event.preventDefault();
+
+  const email = signInEmail.value.trim();
+
+  if (!ageConfirm.checked) {
+    setStatus(signInStatus, "Please confirm you are 13 or older.", "error");
+    return;
+  }
+
+  requestCodeBtn.disabled = true;
+  setStatus(signInStatus, "Sending your code...");
+
+  try {
+    const data = await postJson(`${AUTH_API}/request-code`, { email, ageConfirmed: true });
+
+    pendingEmail = email;
+    renderAccount();
+
+    if (verifySentTo) {
+      verifySentTo.textContent = `Sent to ${email}. It expires in ${data.expiresInMinutes} minutes.`;
+    }
+
+    setStatus(signInStatus, "");
+    setStatus(verifyStatus, "");
+    verifyCode.value = "";
+    verifyCode.focus();
+  } catch (error) {
+    setStatus(signInStatus, error.message, "error");
+  } finally {
+    requestCodeBtn.disabled = false;
+  }
+}
+
+async function handleVerifyCode(event) {
+  event.preventDefault();
+
+  const code = verifyCode.value.trim();
+
+  if (!/^\d{6}$/.test(code)) {
+    setStatus(verifyStatus, "Enter the 6-digit code from your email.", "error");
+    return;
+  }
+
+  verifyCodeBtn.disabled = true;
+  setStatus(verifyStatus, "Checking your code...");
+
+  try {
+    const data = await postJson(`${AUTH_API}/verify-code`, { email: pendingEmail, code });
+
+    currentUser = data.user;
+    pendingEmail = "";
+    verifyCode.value = "";
+    signInEmail.value = "";
+    ageConfirm.checked = false;
+    renderAccount();
+    setStatus(accountStatus, "Signed in. Your next Smile Check will be saved here.", "success");
+
+    // The history screen is per-account now, so anything already on it belongs
+    // to the signed-out browser and has to be replaced.
+    loadHistory();
+  } catch (error) {
+    setStatus(verifyStatus, error.message, "error");
+    verifyCode.select();
+  } finally {
+    verifyCodeBtn.disabled = false;
+  }
+}
+
+async function handleSignOut() {
+  signOutBtn.disabled = true;
+
+  try {
+    await postJson(`${AUTH_API}/logout`);
+  } catch (error) {
+    // Even if the call fails, drop the local view of the session rather than
+    // leaving the page claiming to be signed in.
+  }
+
+  currentUser = null;
+  pendingEmail = "";
+  renderAccount();
+  setStatus(signInStatus, "Signed out.", "success");
+  loadHistory();
+  signOutBtn.disabled = false;
+}
+
+async function handleExportData() {
+  exportDataBtn.disabled = true;
+  setStatus(accountStatus, "Preparing your data...");
+
+  try {
+    const response = await fetch(`${ME_API}/export`);
+
+    if (!response.ok) {
+      throw new Error("Your data could not be exported.");
+    }
+
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+
+    link.href = url;
+    link.download = "smile-check-my-data.json";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+
+    setStatus(accountStatus, "Downloaded everything we hold about you.", "success");
+  } catch (error) {
+    setStatus(accountStatus, error.message, "error");
+  } finally {
+    exportDataBtn.disabled = false;
+  }
+}
+
+async function handleDeleteAccount() {
+  // Irreversible, so it asks plainly and defaults to doing nothing.
+  const confirmed = window.confirm(
+    "Delete your account?\n\nThis permanently removes your email and every saved Smile Check result. It cannot be undone."
+  );
+
+  if (!confirmed) return;
+
+  deleteAccountBtn.disabled = true;
+  setStatus(accountStatus, "Deleting your account...");
+
+  try {
+    const response = await fetch(ME_API, { method: "DELETE" });
+    const data = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      throw new Error(data.error || "Your account could not be deleted.");
+    }
+
+    currentUser = null;
+    pendingEmail = "";
+    renderAccount();
+    setStatus(signInStatus, "Your account and saved results have been deleted.", "success");
+    loadHistory();
+  } catch (error) {
+    setStatus(accountStatus, error.message, "error");
+  } finally {
+    deleteAccountBtn.disabled = false;
+  }
+}
+
+if (requestCodeForm) requestCodeForm.addEventListener("submit", handleRequestCode);
+if (verifyCodeForm) verifyCodeForm.addEventListener("submit", handleVerifyCode);
+if (signOutBtn) signOutBtn.addEventListener("click", handleSignOut);
+if (exportDataBtn) exportDataBtn.addEventListener("click", handleExportData);
+if (deleteAccountBtn) deleteAccountBtn.addEventListener("click", handleDeleteAccount);
+
+if (useAnotherEmailBtn) {
+  useAnotherEmailBtn.addEventListener("click", () => {
+    pendingEmail = "";
+    renderAccount();
+    setStatus(verifyStatus, "");
+    signInEmail.focus();
+  });
+}
+
+// Digits only, so a pasted code with stray spaces still works.
+if (verifyCode) {
+  verifyCode.addEventListener("input", () => {
+    verifyCode.value = verifyCode.value.replace(/\D/g, "").slice(0, 6);
+  });
+}
+
+loadCurrentUser();

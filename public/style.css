@@ -3048,3 +3048,236 @@ main:focus {
     transform: none;
   }
 }
+
+/* ---------- Account ---------- */
+
+/* Mirrors .streak-pill, which it replaces in the header. */
+.account-pill {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex: 0 0 auto;
+  white-space: nowrap;
+  padding: 8px 17px;
+  border-radius: var(--r-pill);
+  background: var(--surface);
+  box-shadow: var(--sh-header);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--ink);
+  transition: transform 0.15s ease, color 0.15s ease;
+}
+
+.account-pill:hover {
+  transform: translateY(-1px);
+  color: var(--blue);
+}
+
+.account-pill i {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--faint);
+  display: block;
+}
+
+/* Teal once signed in, so the header states are distinguishable at a glance
+   and not by colour alone -- the label changes too. */
+.account-pill.is-signed-in i {
+  background: var(--teal);
+}
+
+.account-card {
+  background: var(--surface);
+  border-radius: var(--r-card-2);
+  box-shadow: var(--sh-card-2);
+  padding: 32px 34px;
+  max-width: 620px;
+  margin-bottom: 20px;
+}
+
+.account-form {
+  display: grid;
+  gap: 4px;
+}
+
+.account-form label {
+  display: block;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--muted);
+  margin-bottom: 16px;
+}
+
+.account-form input[type="email"],
+.account-form input[type="text"] {
+  display: block;
+  width: 100%;
+  margin-top: 8px;
+  background: var(--paper);
+  border: 0;
+  border-radius: var(--r-sm);
+  padding: 14px 18px;
+  font-family: var(--font-body);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.account-form input::placeholder {
+  color: var(--faint);
+  font-weight: 500;
+}
+
+/* The code is the one thing people read back character by character. */
+.code-input {
+  font-family: var(--font-display);
+  font-size: 30px;
+  letter-spacing: 12px;
+  text-align: center;
+  max-width: 260px;
+}
+
+/* Scoped to .account-form so it outranks the `.account-form label` rule
+   above, which would otherwise force display:block and unstack the row. */
+.account-form label.account-check {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  margin-bottom: 20px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.account-check input {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--blue);
+  flex: 0 0 auto;
+  margin: 0;
+}
+
+.account-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.account-note {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--muted);
+  line-height: 1.6;
+  margin-top: 18px;
+  max-width: 54ch;
+}
+
+.account-identity {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding-bottom: 22px;
+  margin-bottom: 22px;
+  border-bottom: 2px solid var(--hairline);
+}
+
+.account-avatar {
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background: var(--blue-soft);
+  color: var(--blue);
+  display: grid;
+  place-items: center;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 22px;
+  text-transform: uppercase;
+  flex: 0 0 auto;
+}
+
+.account-identity h3 {
+  font-size: 19px;
+  margin: 0 0 2px;
+  word-break: break-all;
+}
+
+.account-identity p {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--muted);
+  margin: 0;
+}
+
+/* Stating plainly what is and is not held. A privacy promise nobody can read
+   is not one. */
+.account-privacy h4 {
+  font-family: var(--font-display);
+  font-size: 14px;
+  color: var(--muted);
+  margin: 0 0 8px;
+}
+
+.account-privacy h4:not(:first-child) {
+  margin-top: 20px;
+}
+
+.account-privacy ul {
+  list-style: none;
+  display: grid;
+  gap: 7px;
+  margin: 0 0 4px;
+  padding: 0;
+}
+
+.account-privacy li {
+  position: relative;
+  padding-left: 22px;
+  font-size: 14.5px;
+  font-weight: 500;
+  color: var(--ink);
+  line-height: 1.55;
+}
+
+.account-privacy li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 8px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--teal);
+}
+
+/* Destructive and irreversible, so it does not look like the other buttons. */
+.btn-danger {
+  background: var(--coral-soft);
+  color: var(--coral-ink);
+  box-shadow: none;
+}
+
+.btn-danger:hover {
+  background: var(--coral);
+  color: #fff;
+  transform: translateY(-2px);
+}
+
+@media (max-width: 720px) {
+  .account-card {
+    padding: 26px 22px;
+  }
+
+  .code-input {
+    font-size: 26px;
+    letter-spacing: 9px;
+  }
+
+  .account-actions .btn {
+    flex: 1 1 100%;
+  }
+}

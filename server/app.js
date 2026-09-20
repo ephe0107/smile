@@ -21,6 +21,8 @@ const { resultRoutes } = require("./routes/results");
 const { analyticsRoutes } = require("./routes/analytics");
 const { engagementRoutes } = require("./routes/engagement");
 const { commentRoutes } = require("./routes/comments");
+const { meRoutes } = require("./routes/me");
+const { authRoutes } = require("./auth/routes");
 
 // Anything that could carry a credential or a personal detail is stripped
 // before a log line is written. Logs get shipped, tailed, and kept far longer
@@ -112,15 +114,18 @@ async function buildApp({ logger } = {}) {
   });
 
   await app.register(cookie, {
-    secret: config.sessionSecret || undefined,
+    secret: config.sessionSecret,
     parseOptions: { httpOnly: true, sameSite: "lax", secure: config.isProduction, path: "/" },
   });
 
   await app.register(rateLimit, {
     max: Number(process.env.RATE_LIMIT_MAX || 300),
     timeWindow: "1 minute",
-    // Static assets would otherwise burn a visitor's budget on first load.
-    allowList: (request) => request.method === "GET" && !request.url.startsWith("/api"),
+    // Only static assets are exempt -- one page load pulls a stylesheet, a
+    // script, and several images, which would otherwise spend a visitor's
+    // whole budget before they had done anything. Every API route, GET
+    // included, stays limited; /auth/* narrows it further in its own config.
+    allowList: (request) => request.method === "GET" && /\.[a-z0-9]{2,5}$/i.test(request.url.split("?")[0]),
   });
 
   // Every state-changing request must prove it came from our own origin.
@@ -136,7 +141,9 @@ async function buildApp({ logger } = {}) {
     }
   });
 
-  await app.register(analyticsRoutes); // registers invalidateAnalyticsCache
+  await app.register(authRoutes);
+  await app.register(meRoutes);
+  await app.register(analyticsRoutes);
   await app.register(resultRoutes);
   await app.register(engagementRoutes);
   await app.register(commentRoutes);

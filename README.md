@@ -85,7 +85,8 @@ The dashboard labels also identify seeded demo data so it is not mistaken for re
 - `server/config.js` - environment configuration, validated at boot.
 - `server/db/` - connection pool, migration runner, SQL migrations, and SQL aggregates.
 - `server/lib/analytics-summary.js` - aggregation and the disclosure policy.
-- `server/routes/` - one module per API area.
+- `server/auth/` - sign-in codes, sessions, the session guard, and email delivery.
+- `server/routes/` - one module per API area, including `me.js` for account-scoped data.
 - `scripts/seed-demo-data.js` - creates realistic seeded demo data for dashboards.
 - `scripts/import-json-data.js` - one-time import of `data/*.json` into Postgres.
 - `README.md` - this guide.
@@ -100,6 +101,18 @@ them into Postgres. They are gitignored so personal or demo results are never
 uploaded.
 
 Endpoints:
+
+**Accounts**
+
+- `POST /auth/request-code` - emails a 6-digit sign-in code.
+- `POST /auth/verify-code` - exchanges the code for a session cookie.
+- `POST /auth/logout`, `POST /auth/logout-all` - revokes one or every session.
+- `GET /auth/me` - who is signed in, or `null`.
+- `GET /me/results`, `POST /me/results` - the signed-in user's own history.
+- `GET /me/export` - everything held about the account, as JSON.
+- `DELETE /me` - permanently deletes the account and its results.
+
+**Anonymous (no account needed)**
 
 - `POST /results` - saves a completed quiz result.
 - `GET /results?clientId=...` - returns saved results for that one browser. The `clientId` is
@@ -125,6 +138,32 @@ Saved fields:
 - `trend`
 - `completedAt`
 
+## Accounts
+
+Sign-in is passwordless. You enter your email, we send a 6-digit code, you
+type it back. There is no password to create, store, reset, forget, or leak.
+
+A code is emailed rather than a clickable link on purpose: corporate mail
+scanners follow links and silently consume single-use ones, and the email
+often arrives on a phone while the quiz is open on a laptop. A typed code has
+neither problem.
+
+Accounts are for ages 13 and up, confirmed by a checkbox. Under 13 the Smile
+Check still works in full — results just stay on that device. That keeps the
+project on the right side of the COPPA line without building a parental
+consent system, and means no younger child's data is held at all.
+
+Signing in is optional everywhere. Signed out, the quiz, explorer, myth quiz
+and history all still work; history is just per browser instead of per person.
+
+### Adding Google or school sign-in later
+
+Credentials never live on the user row. They live in `identities`, keyed by
+`(provider, provider_subject)`. Email sign-in writes `provider = 'email'`.
+Adding Google means writing `provider = 'google'` with the OIDC `sub` claim
+against the same `user_id` — a new route and the `openid-client` dependency.
+No migration, and no change to how any result is stored or queried.
+
 ## Data Privacy
 
 Saved results describe a person's health habits, so the backend treats them as personal data:
@@ -135,7 +174,20 @@ Saved results describe a person's health habits, so the backend treats them as p
 - **A cohort floor.** Population figures are withheld until at least 5 people have completed a
   Smile Check, and any label breakdown covering fewer than 5 people is dropped. Below that, an
   "average" is just one person's answers restated.
-- **Scoped reads.** Saved history is only ever returned for an explicitly requested `clientId`.
+- **Scoped reads.** Signed in, every query is scoped by the session's user id — never by an
+  identifier the client supplies. Signed out, history is returned only for an explicitly
+  requested `clientId`.
+- **No passwords.** Sign-in codes and session tokens are stored only as SHA-256 hashes, so a
+  database leak yields nothing usable.
+- **Sessions are revocable.** Opaque tokens in an `HttpOnly` cookie, backed by a row that can be
+  deleted. The page's own JavaScript cannot read the session, so an injected script cannot steal
+  it — unlike a token in `localStorage`.
+- **Analytics stay unlinkable.** `engagement_events` has no identity column and never gains one.
+  Behavioural telemetry tied to a named minor is a different thing to hold than an anonymous count.
+- **Data minimization.** Only an email address and an optional display name. No date of birth —
+  just a timestamp recording that the 13+ box was ticked.
+- **Export and erasure.** `GET /me/export` returns everything held; `DELETE /me` removes the
+  account and cascades to the saved results.
 
 ## Navigation
 

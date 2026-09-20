@@ -51,7 +51,9 @@
       <a href="#impact" data-screen-link="impact">Impact</a>
     </nav>
 
-    <span class="streak-pill"><i aria-hidden="true"></i>4-day streak</span>
+    <a class="account-pill" href="#account" data-screen-link="account" id="accountPill">
+      <i aria-hidden="true"></i><span id="accountPillLabel">Sign in</span>
+    </a>
   </header>
 
   <main id="mainContent" tabindex="-1">
@@ -72,9 +74,9 @@
         </div>
 
         <div class="trust-row">
-          <span><i class="dot-teal" aria-hidden="true"></i>No sign-up</span>
+          <span><i class="dot-teal" aria-hidden="true"></i>No sign-up needed</span>
           <span><i class="dot-sun" aria-hidden="true"></i>Two minutes</span>
-          <span><i class="dot-blush" aria-hidden="true"></i>Nothing personal saved</span>
+          <span><i class="dot-blush" aria-hidden="true"></i>No password, ever</span>
         </div>
       </div>
 
@@ -687,6 +689,112 @@
 
       <!-- Off-screen canvas used to render the downloadable/shareable PNG. -->
       <canvas id="certCanvas" width="1200" height="675" hidden></canvas>
+    </section>
+
+    <!-- Account: passwordless sign-in, so there is no password field anywhere. -->
+    <section class="account section-screen" id="account">
+      <div class="section-heading">
+        <h2 id="accountHeading">Save your progress</h2>
+        <p id="accountIntro">
+          Sign in with your email and your Smile Checks follow you to any device. No password to
+          remember — we email you a 6-digit code instead.
+        </p>
+      </div>
+
+      <!-- Step 1: ask for the address. -->
+      <div class="account-card" id="signInCard">
+        <form class="account-form" id="requestCodeForm">
+          <label>
+            Email address
+            <input
+              id="signInEmail"
+              name="email"
+              type="email"
+              autocomplete="email"
+              maxlength="254"
+              placeholder="you@example.com"
+              required
+            />
+          </label>
+
+          <label class="account-check">
+            <input id="ageConfirm" name="ageConfirmed" type="checkbox" required />
+            <span>I am 13 or older.</span>
+          </label>
+
+          <button class="btn btn-primary" id="requestCodeBtn" type="submit">Email me a code</button>
+          <p class="save-status" id="signInStatus" role="status"></p>
+        </form>
+
+        <p class="account-note">
+          Under 13? The Smile Check still works in full without an account — your results just stay
+          on this device.
+        </p>
+      </div>
+
+      <!-- Step 2: only shown once a code has actually been sent. -->
+      <div class="account-card" id="verifyCard" hidden>
+        <form class="account-form" id="verifyCodeForm">
+          <label>
+            6-digit code
+            <input
+              id="verifyCode"
+              name="code"
+              type="text"
+              inputmode="numeric"
+              autocomplete="one-time-code"
+              pattern="[0-9]{6}"
+              maxlength="6"
+              placeholder="000000"
+              class="code-input"
+              required
+            />
+          </label>
+
+          <p class="account-note" id="verifySentTo"></p>
+
+          <div class="account-actions">
+            <button class="btn btn-primary" id="verifyCodeBtn" type="submit">Sign in</button>
+            <button class="btn btn-soft" id="useAnotherEmailBtn" type="button">Use another email</button>
+          </div>
+          <p class="save-status" id="verifyStatus" role="status"></p>
+        </form>
+      </div>
+
+      <!-- Step 3: signed in. -->
+      <div class="account-card" id="accountCard" hidden>
+        <div class="account-identity">
+          <span class="account-avatar" id="accountAvatar" aria-hidden="true">?</span>
+          <div>
+            <h3 id="accountEmail">&nbsp;</h3>
+            <p id="accountMeta">&nbsp;</p>
+          </div>
+        </div>
+
+        <div class="account-privacy">
+          <h4>What is stored</h4>
+          <ul>
+            <li>Your email address, so you can sign back in.</li>
+            <li>Your saved Smile Check results and scores.</li>
+          </ul>
+          <h4>What is not</h4>
+          <ul>
+            <li>No password — there is nothing to leak or reuse.</li>
+            <li>No date of birth. Only that you confirmed you are 13 or older.</li>
+            <li>
+              Learning analytics are recorded without any link to your account, so they can never be
+              traced back to you.
+            </li>
+          </ul>
+        </div>
+
+        <div class="account-actions">
+          <button class="btn btn-soft" id="exportDataBtn" type="button">Download my data</button>
+          <button class="btn btn-soft" id="signOutBtn" type="button">Sign out</button>
+          <button class="btn btn-danger" id="deleteAccountBtn" type="button">Delete my account</button>
+        </div>
+        <p class="save-status" id="accountStatus" role="status"></p>
+      </div>
     </section>
 
     <!-- About section requested in the prompt. -->
